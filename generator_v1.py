@@ -9,66 +9,56 @@ from pydub.generators import Sine
 from pydub.effects import normalize
 # Determine the triads
 triads = {
-    "major": [0, 2, 4],
-    "minor": [0, 2, 3],
-    "diminished": [0, 1, 3],
-    "augmented": [0, 2, 4],
-    "sus2": [0, 1, 3],
-    "sus4": [0, 3, 4],
-    "dominant7": [0, 2, 4, 6],
-    "major7": [0, 2, 4, 7],
-    "minor7": [0, 2, 3, 5],
-    "halfdiminished7": [0, 2, 3, 6],
-    "diminished7": [0, 1, 3, 4]
+    "major": [0, 4, 7],
+    "minor": [0, 3, 7],
+    "diminished": [0, 3, 6],
+    "augmented": [0, 4, 8],
+    "sus2": [0, 2, 7],
+    "sus4": [0, 5, 7],
+    "dominant7": [0, 4, 7, 10],
+    "major7": [0, 4, 7, 11],
+    "minor7": [0, 3, 7, 10],
+    "halfdiminished7": [0, 3, 6, 10],
+    "diminished7": [0, 3, 6, 9]
 }
+
 def generate_chord(scale, chord_type, duration):
-    
     triad = triads[chord_type]
 
     # Choose a random chord from the triads
     root = random.choice(scale)
     notes = [root + i for i in triad]
 
-    # Add extensions
-    extensions = {
-        "7": [0, 2, 4, 6],
-        "9": [0, 2, 4, 6, 8],
-        "11": [0, 2, 4, 6, 8, 10],
-        "13": [0, 2, 4, 6, 8, 10, 12],
-        "maj7": [0, 2, 4, 7],
-        "add9": [0, 2, 4, 8]
-    }
-    extension_type = random.choice(list(extensions.keys()))
-    extension = extensions[extension_type]
-    notes += [root + i for i in extension]
-
-    # Randomly invert the chord
-    inversion = random.choice([0, 1, 2])
-    notes = notes[inversion:] + notes[:inversion]
-
     # Generate sine wave for each note in the chord
     chord = []
-    for note in notes:
-        freq = 440 * 2**((note-69)/12)  # Convert MIDI note number to frequency
-        velocity = random.randint(80, 120)  # Generate random velocity between 80 and 120
-        sine_wave = Sine(freq).to_audio_segment(duration=duration*1000)
-        sine_wave = sine_wave.normalize()  # Normalize volume
-        sine_wave = sine_wave - 60  # Adjust volume level; lower the number for a louder sound
-        sine_wave = sine_wave + (120 - velocity)  # Adjust volume according to velocity
-        # Add sine wave to chord
-        chord.append(np.frombuffer(sine_wave.raw_data, dtype=np.int16))
+    sample_rate = 44100
+    t = np.linspace(0, duration, int(duration * sample_rate), False)
 
+    for note in notes:
+        freq = 440 * 2 ** ((note - 69) / 12)  # Convert MIDI note number to frequency
+        sine_wave = (0.5 * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+        chord.append(sine_wave)
 
     # Combine sine waves to create chord
     chord_data = np.zeros_like(chord[0])
     for note_data in chord:
         chord_data += note_data
 
+    # Normalize the combined chord_data
+    chord_data = chord_data / np.max(np.abs(chord_data))
+
+    # Apply a volume scaling factor (optional)
+    volume_scale = 0.5  # Reduce volume by 50%
+    chord_data = chord_data * volume_scale
+
+    # Convert to int16 format
+    chord_data_int16 = (chord_data * (2 ** 15 - 1)).astype(np.int16)
+
     # Create an AudioSegment from the chord data
-    chord_data = (chord_data * (2**15 - 1) / np.max(np.abs(chord_data))).astype(np.int16)
-    chord_audio = AudioSegment(chord_data.tobytes(), frame_rate=44100, sample_width=2, channels=1)
+    chord_audio = AudioSegment(chord_data_int16.tobytes(), frame_rate=sample_rate, sample_width=2, channels=1)
 
     return chord_audio
+
 
 def generate_audio(duration):
     # Define major scales
