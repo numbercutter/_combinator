@@ -78,7 +78,12 @@ def generate_audio(duration):
     scale_name = random.choice(list(scales.keys()))
     scale = scales[scale_name]
 
-    # Choose a random chord type
+    # Limit the range of root notes
+    min_root = 60  # C4
+    max_root = 72  # C5
+    scale = [note for note in scale if min_root <= note <= max_root]
+
+    # Choose a random chord type (only major and minor)
     chord_type = random.choice(list(triads.keys()))
 
     # Generate chords
@@ -93,7 +98,7 @@ def generate_audio(duration):
             audio = audio.overlay(chord)
 
     # Export the audio to a WAV file
-    audio.export("audio.wav", format="wav")
+    audio.export("audio_.wav", format="wav")
 
 
 
@@ -106,8 +111,8 @@ def generate_visuals(duration, img_size, num_frames):
     return frames
 
 def generate_video(duration, img_size, fps):
-    audio_path = "audio.wav"
-    video_path = "output.mp4"
+    audio_path = "audio_.wav"
+    video_path = "output_.mp4"
 
     num_frames = duration * fps
     generate_audio(duration)

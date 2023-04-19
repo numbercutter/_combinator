@@ -12,5 +12,6 @@ Pipfile.lock
 # Ignore pyenv files
 .python-version
 
-audio.wav
-output.mp4
+
+output_.mp4
+audio_.wav
