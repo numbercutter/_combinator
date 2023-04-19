@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from pydub import AudioSegment
 from moviepy.editor import AudioFileClip, ImageSequenceClip
+import cairo
 
 # Determine the triads
 triads = {
@@ -11,43 +12,41 @@ triads = {
     "minor": [0, 3, 7],
 
 }
+solfeggio_freqs = {
+    "UT": 396 / 4,
+    "RE": 417 / 4,
+    "MI": 528 / 4,
+    "FA": 639 / 4,
+    "SOL": 741 / 4,
+    "LA": 852 / 4,
+}
 
-def generate_chord(scale, chord_type, duration, extensions=None, inversion=0, fm_intensity=0.01, fm_speed=0.5):
-    triad = triads[chord_type]
 
-    # Add extensions if provided
-    if extensions:
-        extended_chord = triad + extensions
-    else:
-        extended_chord = triad
+def generate_chord(start_freqs, end_freqs, duration, fm_intensity=0.01, fm_speed=0.1):
+    num_notes = len(start_freqs)
+    assert num_notes == len(end_freqs), "Start and end frequencies should have the same length."
 
-    # Choose a random chord from the extended chords
-    root = random.choice(scale)
-    notes = [root + i for i in extended_chord]
-
-    # Apply inversion if specified
-    if inversion > 0:
-        for _ in range(inversion):
-            notes.append(notes.pop(0) + 12)
-
-    # Generate sine wave for each note in the chord
-    chord = []
+    # Generate the time vector
     sample_rate = 44100
     t = np.linspace(0, duration, int(duration * sample_rate), False)
 
-    for note in notes:
-        freq = 440 * 2 ** ((note - 69) / 12)  # Convert MIDI note number to frequency
+    # Linearly interpolate the frequencies
+    freqs = [np.linspace(start_freqs[i], end_freqs[i], int(duration * sample_rate)) for i in range(num_notes)]
 
+    # Generate sine wave for each note in the chord
+    chord = []
+
+    for note_freqs in freqs:
         # Generate sine waves for harmonics
         harmonics = np.zeros_like(t)
-        max_harmonic = int(1000 / freq)
+        max_harmonic = int(1000 / np.max(note_freqs))
         for harmonic in range(1, max_harmonic + 1):
-            sine_wave = (0.5 * np.sin(2 * np.pi * freq * harmonic * t) / harmonic).astype(np.float32)
+            sine_wave = (0.5 * np.sin(2 * np.pi * note_freqs * harmonic * t) / harmonic).astype(np.float32)
             harmonics += sine_wave
 
         # Apply frequency modulation
-        fm = np.sin(2 * np.pi * fm_speed * t) * fm_intensity * freq
-        modulated_freq = freq + fm
+        fm = np.sin(2 * np.pi * fm_speed * t) * fm_intensity * note_freqs
+        modulated_freq = note_freqs + fm
         modulated_sine_wave = 0.5 * np.sin(2 * np.pi * modulated_freq * t).astype(np.float32)
         harmonics = 0.5 * harmonics + 0.5 * modulated_sine_wave
 
@@ -74,92 +73,84 @@ def generate_chord(scale, chord_type, duration, extensions=None, inversion=0, fm
     return modulated_chord_audio
 
 
-def generate_audio(duration):
-    # Define major scales
-    scales = {
-    "C major": [60, 62, 64, 65, 67, 69, 71],
-    "C# major": [61, 63, 65, 66, 68, 70, 72],
-    "D major": [62, 64, 66, 67, 69, 71, 73],
-    "D# major": [63, 65, 67, 68, 70, 72, 74],
-    "E major": [64, 66, 68, 69, 71, 73, 75],
-    "F major": [65, 67, 69, 70, 72, 74, 76],
-    "F# major": [66, 68, 70, 71, 73, 75, 77],
-    "G major": [67, 69, 71, 72, 74, 76, 78],
-    "G# major": [68, 70, 72, 73, 75, 77, 79],
-    "A major": [69, 71, 73, 74, 76, 78, 80]
-    }
-    # Choose a random scale
-    scale_name = random.choice(list(scales.keys()))
-    scale = scales[scale_name]
+def midi_to_freq(midi_note):
+    return 440 * 2 ** ((midi_note - 69) / 12)
 
-    # Limit the range of root notes
-    min_root = 60  # C4
-    max_root = 72  # C5
-    scale = [note for note in scale if min_root <= note <= max_root]
 
-    # Choose a random chord type (only major and minor)
-    chord_type = random.choice(list(triads.keys()))
+def generate_audio(duration, num_segments=2):
+    segment_duration = duration / num_segments
 
-    # Randomly decide whether to add extensions and/or inversions
-    use_extensions = random.choice([True, False])
-    use_inversions = random.choice([True, False])
-
-    if use_extensions:
-        extensions = [9, 11]
-    else:
-        extensions = None
-
-    if use_inversions:
-        inversion = random.choice([0, 1, 2])
-    else:
-        inversion = 0
-
-    # Randomly decide whether to apply modulation
-    apply_modulation = random.random() < 0.3  # 30% chance of modulation
-
-    if apply_modulation:
-        fm_intensity = 0.01
-        fm_speed = 0.5
-    else:
-        fm_intensity = 0
-        fm_speed = 0
-
-    # Generate the chord with or without extensions and inversions
-    chord = generate_chord(scale, chord_type, duration, extensions=extensions, inversion=inversion, fm_intensity=fm_intensity, fm_speed=fm_speed)
+    # Create a list of all solfeggio frequencies
+    freq_list = list(solfeggio_freqs.values())
+    
+    # Generate the audio segments
+    audio_segments = []
+    for _ in range(num_segments):
+        start_freqs = random.sample(freq_list, 3)
+        end_freqs = random.sample(freq_list, 3)
+        chord = generate_chord(start_freqs, end_freqs, segment_duration)
+        audio_segments.append(chord)
+    
+    # Concatenate audio segments
+    full_audio = audio_segments[0]
+    for segment in audio_segments[1:]:
+        full_audio = full_audio.append(segment)
 
     # Export the audio to a WAV file
-    chord.export("audio_.wav", format="wav")
-
-
+    full_audio.export("audio_.wav", format="wav")
 
 
 def generate_visuals(duration, img_size, num_frames):
     frames = []
-    for _ in range(num_frames):
-        img = np.random.randint(0, 256, size=(img_size, img_size, 3), dtype=np.uint8)
-        frames.append(Image.fromarray(img))
+
+    # Create a surface for drawing the shapes
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
+    ctx = cairo.Context(surface)
+
+    # Set background color
+    ctx.set_source_rgb(0.2, 0.2, 0.2)
+    ctx.paint()
+
+    # Generate random shapes
+    for i in range(num_frames):
+        # Set random colors
+        r, g, b = np.random.rand(3)
+        ctx.set_source_rgb(r, g, b)
+
+        # Set random shape parameters
+        shape_type = np.random.choice(['rectangle', 'circle', 'line'])
+        if shape_type == 'rectangle':
+            x, y = np.random.randint(0, img_size, size=2)
+            width, height = np.random.randint(img_size//4, img_size//2, size=2)
+            ctx.rectangle(x, y, width, height)
+            ctx.fill()
+        elif shape_type == 'circle':
+            x, y = np.random.randint(0, img_size, size=2)
+            radius = np.random.randint(img_size//4, img_size//2)
+            ctx.arc(x, y, radius, 0, 2 * np.pi)
+            ctx.fill()
+        elif shape_type == 'line':
+            x1, y1 = np.random.randint(0, img_size, size=2)
+            x2, y2 = np.random.randint(0, img_size, size=2)
+            ctx.move_to(x1, y1)
+            ctx.line_to(x2, y2)
+            ctx.set_line_width(np.random.randint(1, 10))
+            ctx.stroke()
+
+        # Convert surface to PIL image and append to list of frames
+        img = Image.frombuffer("RGBA", (img_size, img_size), surface.get_data(), "raw", "BGRA", 0, 1)
+        frames.append(img)
 
     return frames
+
 
 def generate_video(duration, img_size, fps):
     audio_path = "audio_.wav"
     video_path = "output_.mp4"
-
     num_frames = duration * fps
 
-    min_chords = 1
-    max_chords = 5
-    num_chords = random.randint(min_chords, max_chords)
-    chord_durations = np.random.dirichlet(np.ones(num_chords), size=1) * duration
-
-    audio_segments = []
-    for chord_duration in chord_durations[0]:
-        generate_audio(chord_duration)
-        audio_segment = AudioSegment.from_wav(audio_path)
-        audio_segments.append(audio_segment)
-
-    full_audio = sum(audio_segments)
-    full_audio.export(audio_path, format="wav")
+    audio_segment = AudioSegment.from_wav(audio_path)
+    audio_segment.export(audio_path, format="wav")
 
     frames = generate_visuals(duration, img_size, num_frames)
 
@@ -168,8 +159,12 @@ def generate_video(duration, img_size, fps):
     video = video.set_audio(audio)
     video.write_videofile(video_path, fps=fps)
 
+    
 if __name__ == "__main__":
-    duration = 10  # seconds
-    img_size = 1080  # Instagram square dimensions (1080x1080)
-    fps = 10  # frames per second
+    duration = 30  # seconds
+    img_size = 600  # Instagram square dimensions (1080x1080)
+    fps = 30  # frames per second
+
+    generate_audio(duration)
     generate_video(duration, img_size, fps)
+
