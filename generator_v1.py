@@ -4,30 +4,31 @@ import numpy as np
 from PIL import Image
 from pydub import AudioSegment
 from moviepy.editor import AudioFileClip, ImageSequenceClip
-import cairo
-from pydub.generators import Sine
-from pydub.effects import normalize
+
 # Determine the triads
 triads = {
     "major": [0, 4, 7],
     "minor": [0, 3, 7],
-    "diminished": [0, 3, 6],
-    "augmented": [0, 4, 8],
-    "sus2": [0, 2, 7],
-    "sus4": [0, 5, 7],
-    "dominant7": [0, 4, 7, 10],
-    "major7": [0, 4, 7, 11],
-    "minor7": [0, 3, 7, 10],
-    "halfdiminished7": [0, 3, 6, 10],
-    "diminished7": [0, 3, 6, 9]
+
 }
 
-def generate_chord(scale, chord_type, duration):
+def generate_chord(scale, chord_type, duration, extensions=None, inversion=0, fm_intensity=0.01, fm_speed=0.5):
     triad = triads[chord_type]
 
-    # Choose a random chord from the triads
+    # Add extensions if provided
+    if extensions:
+        extended_chord = triad + extensions
+    else:
+        extended_chord = triad
+
+    # Choose a random chord from the extended chords
     root = random.choice(scale)
-    notes = [root + i for i in triad]
+    notes = [root + i for i in extended_chord]
+
+    # Apply inversion if specified
+    if inversion > 0:
+        for _ in range(inversion):
+            notes.append(notes.pop(0) + 12)
 
     # Generate sine wave for each note in the chord
     chord = []
@@ -36,8 +37,21 @@ def generate_chord(scale, chord_type, duration):
 
     for note in notes:
         freq = 440 * 2 ** ((note - 69) / 12)  # Convert MIDI note number to frequency
-        sine_wave = (0.5 * np.sin(2 * np.pi * freq * t)).astype(np.float32)
-        chord.append(sine_wave)
+
+        # Generate sine waves for harmonics
+        harmonics = np.zeros_like(t)
+        max_harmonic = int(1000 / freq)
+        for harmonic in range(1, max_harmonic + 1):
+            sine_wave = (0.5 * np.sin(2 * np.pi * freq * harmonic * t) / harmonic).astype(np.float32)
+            harmonics += sine_wave
+
+        # Apply frequency modulation
+        fm = np.sin(2 * np.pi * fm_speed * t) * fm_intensity * freq
+        modulated_freq = freq + fm
+        modulated_sine_wave = 0.5 * np.sin(2 * np.pi * modulated_freq * t).astype(np.float32)
+        harmonics = 0.5 * harmonics + 0.5 * modulated_sine_wave
+
+        chord.append(harmonics)
 
     # Combine sine waves to create chord
     chord_data = np.zeros_like(chord[0])
@@ -54,10 +68,10 @@ def generate_chord(scale, chord_type, duration):
     # Convert to int16 format
     chord_data_int16 = (chord_data * (2 ** 15 - 1)).astype(np.int16)
 
-    # Create an AudioSegment from the chord data
-    chord_audio = AudioSegment(chord_data_int16.tobytes(), frame_rate=sample_rate, sample_width=2, channels=1)
+    # Create an AudioSegment from the modulated chord data
+    modulated_chord_audio = AudioSegment(chord_data_int16.tobytes(), frame_rate=sample_rate, sample_width=2, channels=1)
 
-    return chord_audio
+    return modulated_chord_audio
 
 
 def generate_audio(duration):
@@ -86,19 +100,36 @@ def generate_audio(duration):
     # Choose a random chord type (only major and minor)
     chord_type = random.choice(list(triads.keys()))
 
-    # Generate chords
-    chord1 = generate_chord(scale, chord_type, duration)
-    chord2 = generate_chord(scale, chord_type, duration)
+    # Randomly decide whether to add extensions and/or inversions
+    use_extensions = random.choice([True, False])
+    use_inversions = random.choice([True, False])
 
-    # Apply a pulsing wave-like volume effect to each chord
-    for i, chord in enumerate([chord1, chord2]):
-        if i == 0:
-            audio = chord
-        else:
-            audio = audio.overlay(chord)
+    if use_extensions:
+        extensions = [9, 11]
+    else:
+        extensions = None
+
+    if use_inversions:
+        inversion = random.choice([0, 1, 2])
+    else:
+        inversion = 0
+
+    # Randomly decide whether to apply modulation
+    apply_modulation = random.random() < 0.3  # 30% chance of modulation
+
+    if apply_modulation:
+        fm_intensity = 0.01
+        fm_speed = 0.5
+    else:
+        fm_intensity = 0
+        fm_speed = 0
+
+    # Generate the chord with or without extensions and inversions
+    chord = generate_chord(scale, chord_type, duration, extensions=extensions, inversion=inversion, fm_intensity=fm_intensity, fm_speed=fm_speed)
 
     # Export the audio to a WAV file
-    audio.export("audio_.wav", format="wav")
+    chord.export("audio_.wav", format="wav")
+
 
 
 
@@ -115,7 +146,21 @@ def generate_video(duration, img_size, fps):
     video_path = "output_.mp4"
 
     num_frames = duration * fps
-    generate_audio(duration)
+
+    min_chords = 1
+    max_chords = 5
+    num_chords = random.randint(min_chords, max_chords)
+    chord_durations = np.random.dirichlet(np.ones(num_chords), size=1) * duration
+
+    audio_segments = []
+    for chord_duration in chord_durations[0]:
+        generate_audio(chord_duration)
+        audio_segment = AudioSegment.from_wav(audio_path)
+        audio_segments.append(audio_segment)
+
+    full_audio = sum(audio_segments)
+    full_audio.export(audio_path, format="wav")
+
     frames = generate_visuals(duration, img_size, num_frames)
 
     audio = AudioFileClip(audio_path)
@@ -124,7 +169,7 @@ def generate_video(duration, img_size, fps):
     video.write_videofile(video_path, fps=fps)
 
 if __name__ == "__main__":
-    duration = 5  # seconds
+    duration = 10  # seconds
     img_size = 1080  # Instagram square dimensions (1080x1080)
-    fps = 30  # frames per second
+    fps = 10  # frames per second
     generate_video(duration, img_size, fps)
