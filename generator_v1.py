@@ -100,6 +100,48 @@ def generate_audio(duration, num_segments=2):
     full_audio.export("audio_.wav", format="wav")
 
 
+def generate_random_color():
+    r, g, b = np.random.rand(3)
+    return (r, g, b)
+
+def generate_random_rectangle(img_size):
+    x, y = np.random.randint(0, img_size, size=2)
+    width, height = np.random.randint(img_size//4, img_size//2, size=2)
+    return (x, y, width, height)
+
+def generate_random_circle(img_size):
+    x, y = np.random.randint(0, img_size, size=2)
+    radius = np.random.randint(img_size//4, img_size//2)
+    return (x, y, radius)
+
+def generate_random_line(img_size):
+    x1, y1 = np.random.randint(0, img_size, size=2)
+    x2, y2 = np.random.randint(0, img_size, size=2)
+    line_width = np.random.randint(1, 10)
+    return (x1, y1, x2, y2, line_width)
+
+def draw_random_shape(ctx, img_size):
+    # Set random colors
+    r, g, b = generate_random_color()
+    ctx.set_source_rgb(r, g, b)
+
+    # Set random shape parameters
+    shape_type = np.random.choice(['rectangle', 'circle', 'line'])
+    if shape_type == 'rectangle':
+        x, y, width, height = generate_random_rectangle(img_size)
+        ctx.rectangle(x, y, width, height)
+        ctx.fill()
+    elif shape_type == 'circle':
+        x, y, radius = generate_random_circle(img_size)
+        ctx.arc(x, y, radius, 0, 2 * np.pi)
+        ctx.fill()
+    elif shape_type == 'line':
+        x1, y1, x2, y2, line_width = generate_random_line(img_size)
+        ctx.move_to(x1, y1)
+        ctx.line_to(x2, y2)
+        ctx.set_line_width(line_width)
+        ctx.stroke()
+
 def generate_visuals(duration, img_size, num_frames):
     frames = []
 
@@ -111,6 +153,12 @@ def generate_visuals(duration, img_size, num_frames):
     ctx.set_source_rgb(0.2, 0.2, 0.2)
     ctx.paint()
 
+    # Define possible shape types
+    shape_types = ['rectangle', 'circle', 'line']
+
+    # Define possible movement types
+    movements = ['linear', 'circular', 'bezier']
+
     # Generate random shapes
     for i in range(num_frames):
         # Set random colors
@@ -118,24 +166,43 @@ def generate_visuals(duration, img_size, num_frames):
         ctx.set_source_rgb(r, g, b)
 
         # Set random shape parameters
-        shape_type = np.random.choice(['rectangle', 'circle', 'line'])
+        shape_type = np.random.choice(shape_types)
         if shape_type == 'rectangle':
             x, y = np.random.randint(0, img_size, size=2)
             width, height = np.random.randint(img_size//4, img_size//2, size=2)
             ctx.rectangle(x, y, width, height)
-            ctx.fill()
         elif shape_type == 'circle':
             x, y = np.random.randint(0, img_size, size=2)
             radius = np.random.randint(img_size//4, img_size//2)
             ctx.arc(x, y, radius, 0, 2 * np.pi)
-            ctx.fill()
         elif shape_type == 'line':
             x1, y1 = np.random.randint(0, img_size, size=2)
             x2, y2 = np.random.randint(0, img_size, size=2)
             ctx.move_to(x1, y1)
             ctx.line_to(x2, y2)
             ctx.set_line_width(np.random.randint(1, 10))
+
+        # Apply random movement to shape
+        movement = np.random.choice(movements)
+        speed = np.random.randint(1, 10)
+        if movement == 'linear':
+            ctx.translate(np.sin(i * speed) * img_size / 2, np.cos(i * speed) * img_size / 2)
+        elif movement == 'circular':
+            ctx.translate(img_size / 2, img_size / 2)
+            ctx.rotate(np.random.random() * 2 * np.pi)
+            ctx.translate(-img_size / 2, -img_size / 2)
+            ctx.translate(np.sin(i * speed) * img_size / 2, np.cos(i * speed) * img_size / 2)
+        elif movement == 'bezier':
+            cp1x, cp1y = np.random.randint(0, img_size, size=2)
+            cp2x, cp2y = np.random.randint(0, img_size, size=2)
+            x, y = np.random.randint(0, img_size, size=2)
+            ctx.curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
+
+        # Fill or stroke the shape
+        if shape_type == 'line':
             ctx.stroke()
+        else:
+            ctx.fill()
 
         # Convert surface to PIL image and append to list of frames
         img = Image.frombuffer("RGBA", (img_size, img_size), surface.get_data(), "raw", "BGRA", 0, 1)
@@ -144,7 +211,9 @@ def generate_visuals(duration, img_size, num_frames):
     return frames
 
 
-def generate_video(duration, img_size, fps):
+
+
+def generate_video(duration, img_size, fps, num_generations=3, crossfade_duration=1):
     audio_path = "audio_.wav"
     video_path = "output_.mp4"
     num_frames = duration * fps
@@ -152,12 +221,33 @@ def generate_video(duration, img_size, fps):
     audio_segment = AudioSegment.from_wav(audio_path)
     audio_segment.export(audio_path, format="wav")
 
-    frames = generate_visuals(duration, img_size, num_frames)
+    # Generate multiple generations of visuals
+    all_frames = []
+    for generation in range(num_generations):
+        generation_duration = duration / num_generations
+        generation_frames = generate_visuals(generation_duration, img_size, num_frames // num_generations)
+        all_frames.extend(generation_frames)
 
+    # Combine frames with crossfades
+    crossfade_frames = int(crossfade_duration * fps)
+    num_frames = len(all_frames)
+    fade_in = np.linspace(0, 1, crossfade_frames)
+    fade_out = np.linspace(1, 0, crossfade_frames)
+    for i in range(num_generations - 1):
+        start_frame = i * num_frames // num_generations
+        end_frame = (i + 1) * num_frames // num_generations
+        for j in range(crossfade_frames):
+            alpha = fade_out[j]
+            all_frames[start_frame + j] = Image.blend(all_frames[start_frame + j], all_frames[end_frame - crossfade_frames + j], alpha)
+            alpha = fade_in[j]
+            all_frames[end_frame - crossfade_frames + j] = Image.blend(all_frames[start_frame + j], all_frames[end_frame - crossfade_frames + j], alpha)
+
+    # Combine frames into video
     audio = AudioFileClip(audio_path)
-    video = ImageSequenceClip([np.array(img) for img in frames], fps=fps)
+    video = ImageSequenceClip([np.array(img) for img in all_frames], fps=fps)
     video = video.set_audio(audio)
     video.write_videofile(video_path, fps=fps)
+
 
     
 if __name__ == "__main__":
