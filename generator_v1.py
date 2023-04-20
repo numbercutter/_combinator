@@ -4,6 +4,8 @@ import numpy as np
 from PIL import Image
 from pydub import AudioSegment
 from moviepy.editor import AudioFileClip, ImageSequenceClip
+from moviepy.editor import TextClip, CompositeVideoClip
+
 import cairo
 
 # Determine the triads
@@ -77,7 +79,7 @@ def midi_to_freq(midi_note):
     return 440 * 2 ** ((midi_note - 69) / 12)
 
 
-def generate_audio(duration, num_segments=2):
+def generate_audio(duration, num_segments=1):
     segment_duration = duration / num_segments
 
     # Create a list of all solfeggio frequencies
@@ -245,8 +247,27 @@ def generate_video(duration, img_size, fps, num_generations=3, crossfade_duratio
     # Combine frames into video
     audio = AudioFileClip(audio_path)
     video = ImageSequenceClip([np.array(img) for img in all_frames], fps=fps)
+
+    # Add text frames at random intervals
+    text_interval = 5  # seconds
+    text_duration = 0.5  # seconds
+    text_frames = int(text_interval * fps)
+    text_frames_duration = int(text_duration * fps)
+
+    for i in range(0, num_frames, text_frames):
+        random_text = ' '.join(np.random.choice(['word', 'phrase'], np.random.randint(1, 6)))
+        text_clip = TextClip(
+            random_text,
+            fontsize=30,
+            font='d.ttf',
+            color='white',
+            size=video.size
+        ).set_position('center').set_duration(text_duration)
+        video = CompositeVideoClip([video, text_clip.set_start(i / fps)])
+
     video = video.set_audio(audio)
     video.write_videofile(video_path, fps=fps)
+
 
 
     
