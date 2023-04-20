@@ -5,6 +5,8 @@ from PIL import Image
 from pydub import AudioSegment
 from moviepy.editor import AudioFileClip, ImageSequenceClip
 from moviepy.editor import TextClip, CompositeVideoClip
+from moviepy.editor import ImageClip
+
 import string
 import cairo
 from moviepy.editor import concatenate_videoclips
@@ -333,12 +335,12 @@ def generate_video(
                 alpha,
             )
 
-    # Combine frames into video
+   # Combine frames into video
     audio = AudioFileClip(audio_path)
     video = ImageSequenceClip([np.array(img) for img in all_frames], fps=fps)
 
-    # Your other settings and configurations...
-
+    # Create ImageClips from the frames
+    image_clips = [ImageClip(np.array(img)).set_duration(1 / fps) for img in all_frames]
 
     # Add text frames at random intervals
     text_duration = 0.5  # seconds
@@ -353,11 +355,15 @@ def generate_video(
         5, hook_text, 30, "Arial", "white", video.size
     )
 
-    # Add the hook text to the beginning of the clips array
-    clips = [hook_text_clip] + clips
+    # Initialize clips as an empty list
+    clips = []
 
-    # Add text clips to the array at random intervals
-    for i in range(0, num_frames, text_frames):
+    # Add the hook text to the beginning of the clips array
+    clips = [hook_text_clip] + [ImageClip(np.array(img)).set_duration(1 / fps).set_start(5) for img in all_frames]
+
+
+    # Add text clips to the array at random intervals after the 5-second hook
+    for i in range(5 * fps, num_frames, text_frames):
         random_text = " ".join(
             "".join(
                 random.choices(
@@ -369,6 +375,10 @@ def generate_video(
 
         # Add "harmony" and "simapsee" to the random text
         random_text = f"harmony {random_text} simapsee"
+
+        # Add "get off instagram" or "focus on your goals" to the random text with a certain probability
+        if random.random() < 0.3:
+            random_text = random.choice(["get off instagram", "focus on your goals"])
 
         text_clip = (
             TextClip(random_text, fontsize=30, font="Blox2.ttf", color="white", size=video.size)
@@ -389,14 +399,15 @@ def generate_video(
 
 
 
+
 if __name__ == "__main__":
     duration = 30  # seconds
     img_size = 800  # Instagram square dimensions (1080x1080)
-    fps = 30  # frames per second
+    fps = 15  # frames per second
 
     num_generations = random.randint(20, 50)
     crossfade_duration = random.uniform(0.5, 2)
-    text_interval = random.randint(2, 15)
+    text_interval = random.randint(2, 6)
     text_duration = random.uniform(0.2, 1)
     num_segments = 1
 
