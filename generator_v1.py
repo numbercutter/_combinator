@@ -8,6 +8,8 @@ from moviepy.editor import TextClip, CompositeVideoClip
 import string
 import cairo
 from moviepy.editor import concatenate_videoclips
+import librosa
+import soundfile as sf
 
 solfeggio_freqs = {
     "UT": 396 / 4,
@@ -18,11 +20,44 @@ solfeggio_freqs = {
     "LA": 852 / 4,
 }
 
-# New function to generate soothing sound bath
-def generate_soothing_sound_bath(duration):
-    freqs = [200, 300, 400]  # You can modify these frequencies to create a more soothing sound bath
-    chord_data = generate_chord(freqs, freqs, duration)
-    return chord_data
+def generate_sine_wave(freq, duration, sample_rate, amplitude=1.0):
+    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+    return amplitude * np.sin(2 * np.pi * freq * t)
+
+def apply_fade(audio, fade_in_samples, fade_out_samples):
+    audio[:fade_in_samples] *= np.linspace(0, 1, fade_in_samples)
+    audio[-fade_out_samples:] *= np.linspace(1, 0, fade_out_samples)
+    return audio
+
+def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav'):
+    sample_rate = 44100
+
+    # Set the frequencies, amplitudes, and fade times for the deep ambient sound
+    freqs = [150, 225, 300, 360]  # Increased frequencies
+    amps = [0.4, 0.3, 0.2, 0.1]  # Increased amplitudes
+    fade_time = int(0.25 * sample_rate)  # 0.25 seconds
+
+    # Generate sine waves with the given frequencies and amplitudes
+    sine_waves = []
+    for freq, amp in zip(freqs, amps):
+        sine_wave = generate_sine_wave(freq, duration, sample_rate, amplitude=amp)
+        sine_waves.append(sine_wave)
+
+    # Create the combined deep ambient sound
+    lush_sound = np.zeros_like(sine_waves[0])
+    for sine_wave in sine_waves:
+        lush_sound += sine_wave
+
+    # Apply fade in and fade out to create smooth transitions
+    lush_sound = apply_fade(lush_sound, fade_time, fade_time)
+
+    # Normalize the audio
+    lush_sound = librosa.util.normalize(lush_sound, norm=np.inf, axis=None)
+
+    # Save the audio to a file
+    sf.write(output_file, lush_sound, sample_rate, format='wav')
+
+    return output_file
 
 # New function to create the 5-second visual hook
 def create_hook_text_clip(duration, text, fontsize, font, color, size, position="center"):
@@ -119,13 +154,15 @@ def generate_audio(duration, num_segments=1):
         full_audio = full_audio.append(segment)
 
     # Create a soothing sound bath for the hook
-    hook_audio = generate_soothing_sound_bath(5)
+    hook_audio_file = generate_soothing_sound_bath(5)
+    hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
 
     # Concatenate the hook audio with the rest of the audio
-    full_audio = hook_audio + full_audio
+    full_audio = hook_audio.append(full_audio)  # Changed this line
 
     # Export the audio to a WAV file
     full_audio.export("audio_.wav", format="wav")
+
 
 
 
