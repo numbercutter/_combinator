@@ -157,13 +157,81 @@ def generate_audio(duration, num_segments=1):
     # Export the audio to a WAV file
     full_audio.export("audio_.wav", format="wav")
 
+def generate_background(img_size):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
+    ctx = cairo.Context(surface)
 
+    # Generate random gradient
+    gradient = cairo.LinearGradient(0, 0, img_size, img_size)
+    gradient.add_color_stop_rgb(0, np.random.rand(), np.random.rand(), np.random.rand())
+    gradient.add_color_stop_rgb(1, np.random.rand(), np.random.rand(), np.random.rand())
 
+    # Draw rectangle with gradient
+    ctx.rectangle(0, 0, img_size, img_size)
+    ctx.set_source(gradient)
+    ctx.fill()
+
+    # Create SurfacePattern from surface
+    pattern = cairo.SurfacePattern(surface)
+    pattern.set_extend(cairo.EXTEND_REPEAT)
+
+    return pattern
+
+def mutate_shape(ctx, shape_type, x, y, width, height):
+    """
+    Modifies a shape to create a face.
+    """
+    if shape_type == 'rectangle':
+        # Create a square face
+        width = height = np.random.randint(img_size//4, img_size//2)
+        ctx.rectangle(x, y, width, height)
+    elif shape_type == 'circle':
+        # Add eyes and a mouth to the circle
+        radius = np.random.randint(img_size//4, img_size//2)
+        ctx.arc(x, y, radius, 0, 2 * np.pi)
+        eye_radius = radius // 5
+        eye_x_offset = radius // 2
+        eye_y_offset = radius // 2
+        mouth_width = radius // 2
+        mouth_height = radius // 3
+        mouth_y_offset = radius // 2
+        ctx.arc(x - eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
+        ctx.arc(x + eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
+        ctx.move_to(x - mouth_width//2, y + mouth_y_offset)
+        ctx.line_to(x + mouth_width//2, y + mouth_y_offset)
+        ctx.line_to(x + mouth_width//2, y + mouth_y_offset + mouth_height)
+        ctx.line_to(x - mouth_width//2, y + mouth_y_offset + mouth_height)
+        ctx.line_to(x - mouth_width//2, y + mouth_y_offset)
+    elif shape_type == 'triangle':
+        # Add eyes and a mouth to the triangle
+        x1, y1 = x, y - height//2
+        x2, y2 = x - width//2, y + height//2
+        x3, y3 = x + width//2, y + height//2
+        ctx.move_to(x1, y1)
+        ctx.line_to(x2, y2)
+        ctx.line_to(x3, y3)
+        ctx.line_to(x1, y1)
+        eye_radius = width // 10
+        eye_x_offset = width // 4
+        eye_y_offset = height // 4
+        mouth_width = width // 2
+        mouth_height = height // 3
+        mouth_y_offset = height // 2
+        ctx.arc(x - eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
+        ctx.arc(x + eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
+        ctx.move_to(x - mouth_width//2, y + mouth_y_offset)
+        ctx.line_to(x + mouth_width//2, y + mouth_y_offset)
+        ctx.line_to(x + mouth_width//2, y + mouth_y_offset + mouth_height)
+        ctx.line_to(x - mouth_width//2, y + mouth_y_offset + mouth_height)
+        ctx.line_to(x - mouth_width//2, y + mouth_y_offset)
+
+    return x, y, width, height
 
 
 def generate_visuals(duration, img_size, num_frames):
     frames = []
-
+    # Generate random background
+    background = generate_background(img_size)
     # Create a surface for drawing the shapes
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
     ctx = cairo.Context(surface)
@@ -172,13 +240,16 @@ def generate_visuals(duration, img_size, num_frames):
     ctx.paint()
 
     # Define possible shape types
-    shape_types = ['rectangle', 'circle', 'line']
+    shape_types = ['rectangle', 'circle', 'line', 'triangle', 'ellipse', 'star']
 
     # Define possible movement types
-    movements = ['linear', 'circular', 'bezier']
+    movements = ['linear', 'circular', 'bezier', 'zigzag', 'bounce']
 
     # Generate random shapes
     for i in range(num_frames):
+        # Draw background
+        ctx.set_source(background)
+        ctx.paint()
         # Set random colors
         r, g, b = np.random.rand(3)
         ctx.set_source_rgb(r, g, b)
@@ -199,6 +270,37 @@ def generate_visuals(duration, img_size, num_frames):
             ctx.move_to(x1, y1)
             ctx.line_to(x2, y2)
             ctx.set_line_width(np.random.randint(1, 10))
+        elif shape_type == 'triangle':
+            x1, y1 = np.random.randint(0, img_size, size=2)
+            x2, y2 = np.random.randint(0, img_size, size=2)
+            x3, y3 = np.random.randint(0, img_size, size=2)
+            ctx.move_to(x1, y1)
+            ctx.line_to(x2, y2)
+            ctx.line_to(x3, y3)
+            ctx.line_to(x1, y1)
+        elif shape_type == 'ellipse':
+            x, y = np.random.randint(0, img_size, size=2)
+            width, height = np.random.randint(img_size//4, img_size//2, size=2)
+            ctx.save()
+            ctx.translate(x, y)
+            ctx.scale(width / 2, height / 2)
+            ctx.arc(0, 0, 1, 0, 2 * np.pi)
+            ctx.restore()
+        elif shape_type == 'star':
+            x, y = np.random.randint(0, img_size, size=2)
+            outer_radius = np.random.randint(img_size//4, img_size//2)
+            inner_radius = outer_radius // 2
+            num_points = np.random.randint(5, 10)
+            angle = np.pi / num_points
+            ctx.save()
+            ctx.translate(x, y)
+            ctx.move_to(outer_radius, 0)
+            for i in range(num_points):
+                ctx.rotate(angle)
+                ctx.line_to(inner_radius, 0)
+                ctx.rotate(angle)
+                ctx.line_to(outer_radius, 0)
+            ctx.restore()
 
         # Apply random movement to shape
         movement = np.random.choice(movements)
@@ -215,6 +317,20 @@ def generate_visuals(duration, img_size, num_frames):
             cp2x, cp2y = np.random.randint(0, img_size, size=2)
             x, y = np.random.randint(0, img_size, size=2)
             ctx.curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
+        elif movement == 'zigzag':
+            x, y = np.random.randint(0, img_size, size=2)
+            freq = np.random.randint(5, 20)
+            amp = np.random.randint(5, 20)
+            offset = np.random.randint(-img_size//4, img_size//4)
+            x_offset = (np.sin(i / freq) * amp) + offset
+            ctx.translate(x_offset, 0)
+        elif movement == 'bounce':
+            x, y = np.random.randint(0, img_size, size=2)
+            freq = np.random.randint(5, 20)
+            amp = np.random.randint(5, 20)
+            offset = np.random.randint(-img_size//4, img_size//4)
+            y_offset = (np.sin(i / freq) * amp) + offset
+            ctx.translate(0, y_offset)
 
         # Fill or stroke the shape
         if shape_type == 'line':
@@ -227,6 +343,8 @@ def generate_visuals(duration, img_size, num_frames):
         frames.append(img)
 
     return frames
+
+
 
 def generate_random_text():
     random_text = " ".join(
