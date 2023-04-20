@@ -168,8 +168,7 @@ def generate_visuals(duration, img_size, num_frames):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
     ctx = cairo.Context(surface)
 
-    # Set background color
-    ctx.set_source_rgb(0.2, 0.2, 0.2)
+
     ctx.paint()
 
     # Define possible shape types
@@ -331,7 +330,7 @@ def generate_video(duration, img_size, fps, text_duration, num_generations=30, c
 
 
 if __name__ == "__main__":
-    duration = 30  # seconds
+    duration = 25  # seconds
     img_size = 800  # Instagram square dimensions (1080x1080)
     fps = 30  # frames per second
 
