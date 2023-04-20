@@ -8,11 +8,7 @@ from moviepy.editor import TextClip, CompositeVideoClip
 import string
 import cairo
 
-# Determine the triads
-triads = {
-    "major": [0, 4, 7],
-    "minor": [0, 3, 7],
-}
+
 solfeggio_freqs = {
     "UT": 396 / 4,
     "RE": 417 / 4,
@@ -114,7 +110,7 @@ def generate_audio(duration, num_segments=1):
 
 
 
-def generate_visuals(duration, img_size, num_frames):
+def generate_visuals(duration, img_size, num_frames, update_interval=5):
     frames = []
 
     # Create a surface for drawing the shapes
@@ -127,6 +123,10 @@ def generate_visuals(duration, img_size, num_frames):
     # Define possible movement types
     movements = ["linear", "circular", "bezier", "scale"]
 
+    # Set up variables for the previous and current shapes
+    prev_shapes = []
+    curr_shapes = []
+
     # Generate random shapes
     for i in range(num_frames):
         # Clear the canvas
@@ -135,47 +135,61 @@ def generate_visuals(duration, img_size, num_frames):
         ctx.paint()
         ctx.restore()
 
+        # Check if it's time to update the visuals
+        if i % update_interval == 0:
+            prev_shapes = curr_shapes
+            curr_shapes = []
 
-        ctx.paint()
+            # Generate random shapes
+            num_shapes = np.random.randint(1, 5)
+            for _ in range(num_shapes):
+                shape = {
+                    "type": np.random.choice(shape_types),
+                    "params": np.random.uniform(0, img_size, size=4),
+                    "color": np.random.uniform(0.3, 0.7, size=4),
+                    "movement": np.random.choice(movements),
+                    "speed": np.random.randint(1, 10),
+                }
+                curr_shapes.append(shape)
 
-        # Generate random shapes
-        num_shapes = np.random.randint(1, 5)
-        for _ in range(num_shapes):
-            r, g, b, a = np.random.uniform(0.3, 0.7, size=4)
-            ctx.set_source_rgba(r, g, b, a)
+        # Interpolate between the previous and the current shapes
+        t = (i % update_interval) / update_interval
+        shapes = []
+        for prev_shape, curr_shape in zip(prev_shapes, curr_shapes):
+            shape = {}
+            for key in prev_shape.keys():
+                if key == "params":
+                    shape[key] = prev_shape[key] * (1 - t) + curr_shape[key] * t
+                else:
+                    shape[key] = curr_shape[key]
+            shapes.append(shape)
 
-            # Set random shape parameters
-            shape_type = np.random.choice(shape_types)
-            if shape_type == "rectangle":
-                x, y = np.random.randint(0, img_size, size=2)
-                width, height = np.random.randint(img_size // 4, img_size // 2, size=2)
+        # Draw the interpolated shapes
+        for shape in shapes:
+            ctx.set_source_rgba(*shape["color"])
+
+            if shape["type"] == "rectangle":
+                x, y, width, height = shape["params"]
                 ctx.rectangle(x, y, width, height)
-            elif shape_type == "circle":
-                x, y = np.random.randint(0, img_size, size=2)
-                radius = np.random.randint(img_size // 4, img_size // 2)
+            elif shape["type"] == "circle":
+                x, y, radius, _ = shape["params"]
                 ctx.arc(x, y, radius, 0, 2 * np.pi)
-            elif shape_type == "line":
-                x1, y1 = np.random.randint(0, img_size, size=2)
-                x2, y2 = np.random.randint(0, img_size, size=2)
+            elif shape["type"] == "line":
+                x1, y1, x2, y2 = shape["params"]
                 ctx.move_to(x1, y1)
                 ctx.line_to(x2, y2)
                 ctx.set_line_width(np.random.randint(1, 10))
-            elif shape_type == "triangle":
-                x1, y1 = np.random.randint(0, img_size, size=2)
-                x2, y2 = np.random.randint(0, img_size, size=2)
+            elif shape["type"] == "triangle":
+                x1, y1, x2, y2 = shape["params"]
                 x3, y3 = np.random.randint(0, img_size, size=2)
                 ctx.move_to(x1, y1)
                 ctx.line_to(x2, y2)
                 ctx.line_to(x3, y3)
                 ctx.close_path()
-            elif shape_type == "arc":
-                x, y = np.random.randint(0, img_size, size=2)
-                radius = np.random.randint(img_size // 4, img_size // 2)
-                angle1 = np.random.rand() * 2 * np.pi
-                angle2 = np.random.rand() * 2 * np.pi
-                ctx.arc(x, y, radius, angle1, angle2)
-
-            # Apply random movement to shape
+            elif shape["type"] == "arc":
+                x, y, radius, angle = shape["params"]
+                ctx.arc(x, y, radius, 0, angle)
+        # Apply random movement to shape
             movement = np.random.choice(movements)
             speed = np.random.randint(1, 10)
             if movement == "linear":
@@ -200,9 +214,8 @@ def generate_visuals(duration, img_size, num_frames):
                 ctx.translate(img_size / 2, img_size / 2)
                 ctx.scale(scale_factor, scale_factor)
                 ctx.translate(-img_size / 2, -img_size / 2)
-
             # Fill or stroke the shape
-            if shape_type == "line":
+            if shape["type"] == "line":
                 ctx.stroke()
             else:
                 ctx.fill()
