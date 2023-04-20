@@ -7,7 +7,7 @@ from moviepy.editor import AudioFileClip, ImageSequenceClip
 from moviepy.editor import TextClip, CompositeVideoClip
 import string
 import cairo
-
+from moviepy.editor import concatenate_videoclips
 
 solfeggio_freqs = {
     "UT": 396 / 4,
@@ -18,6 +18,20 @@ solfeggio_freqs = {
     "LA": 852 / 4,
 }
 
+# New function to generate soothing sound bath
+def generate_soothing_sound_bath(duration):
+    freqs = [200, 300, 400]  # You can modify these frequencies to create a more soothing sound bath
+    chord_data = generate_chord(freqs, freqs, duration)
+    return chord_data
+
+# New function to create the 5-second visual hook
+def create_hook_text_clip(duration, text, fontsize, font, color, size, position="center"):
+    text_clip = (
+        TextClip(text, fontsize=fontsize, font=font, color=color, size=size)
+        .set_position(position)
+        .set_duration(duration)
+    )
+    return text_clip
 
 def generate_chord(start_freqs, end_freqs, duration, fm_intensity=0.01, fm_speed=0.1):
     num_notes = len(start_freqs)
@@ -103,6 +117,12 @@ def generate_audio(duration, num_segments=1):
     full_audio = audio_segments[0]
     for segment in audio_segments[1:]:
         full_audio = full_audio.append(segment)
+
+    # Create a soothing sound bath for the hook
+    hook_audio = generate_soothing_sound_bath(5)
+
+    # Concatenate the hook audio with the rest of the audio
+    full_audio = hook_audio + full_audio
 
     # Export the audio to a WAV file
     full_audio.export("audio_.wav", format="wav")
@@ -287,8 +307,17 @@ def generate_video(
     text_duration = 0.5  # seconds
     text_frames = int(text_duration * fps)
 
-    # Initialize an array to store the clips
-    clips = [video]
+    # Create a 5-second visual hook
+    hook_text = (
+        "WARNING: This content will improve your life. "
+        "Enter at your own risk."
+    )
+    hook_text_clip = create_hook_text_clip(
+        5, hook_text, 30, "Arial", "white", video.size
+    )
+
+    # Add the hook text to the beginning of the clips array
+    clips = [hook_text_clip] + clips
 
     # Add text clips to the array at random intervals
     for i in range(0, num_frames, text_frames):
