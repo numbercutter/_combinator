@@ -215,7 +215,7 @@ def generate_visuals(duration, img_size, num_frames):
 
 
 
-def generate_video(duration, img_size, fps, num_generations=3, crossfade_duration=1):
+def generate_video(duration, img_size, fps, num_generations=30, crossfade_duration=1):
     audio_path = "audio_.wav"
     video_path = "output_.mp4"
     num_frames = duration * fps
