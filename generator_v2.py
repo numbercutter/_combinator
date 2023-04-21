@@ -232,6 +232,7 @@ def generate_visuals(duration, img_size, num_frames):
     frames = []
     # Generate random background
     background = generate_background(img_size)
+
     # Create a surface for drawing the shapes
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
     ctx = cairo.Context(surface)
@@ -240,16 +241,16 @@ def generate_visuals(duration, img_size, num_frames):
     ctx.paint()
 
     # Define possible shape types
-    shape_types = ['rectangle', 'circle', 'line', 'triangle', 'ellipse', 'star']
+    shape_types = ['rectangle', 'circle', 'line']
 
     # Define possible movement types
-    movements = ['linear', 'circular', 'bezier', 'zigzag', 'bounce']
+    movements = ['linear', 'circular', 'bezier']
 
     # Generate random shapes
     for i in range(num_frames):
         # Draw background
-        ctx.set_source(background)
-        ctx.paint()
+        #ctx.set_source(background)
+        #ctx.paint()
         # Set random colors
         r, g, b = np.random.rand(3)
         ctx.set_source_rgb(r, g, b)
