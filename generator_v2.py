@@ -1,7 +1,8 @@
 import os
 import random
 import numpy as np
-from PIL import Image
+from math import sqrt, sin, cos, radians
+from PIL import Image, ImageDraw, ImageFont, ImageChops
 from pydub import AudioSegment
 from moviepy.editor import AudioFileClip, ImageSequenceClip
 from moviepy.editor import TextClip, CompositeVideoClip
@@ -12,7 +13,8 @@ import cairo
 from moviepy.editor import concatenate_videoclips
 import librosa
 import soundfile as sf
-
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 solfeggio_freqs = {
     "UT": 396 / 4,
     "RE": 417 / 4,
@@ -35,8 +37,8 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     sample_rate = 44100
 
     # Set the frequencies, amplitudes, and fade times for the deep ambient sound
-    freqs = [150, 225, 300, 360]  # Increased frequencies
-    amps = [0.4, 0.3, 0.2, 0.1]  # Increased amplitudes
+    freqs = [50, 100, 150, 225, 300, 360]  # Added lower frequencies
+    amps = [0.5, 0.4, 0.4, 0.3, 0.2, 0.1]  # Adjusted amplitudes
     fade_time = int(0.25 * sample_rate)  # 0.25 seconds
 
     # Generate sine waves with the given frequencies and amplitudes
@@ -53,14 +55,25 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     # Apply fade in and fade out to create smooth transitions
     lush_sound = apply_fade(lush_sound, fade_time, fade_time)
 
+    # Generate binaural beat (e.g., 5 Hz difference for theta waves)
+    binaural_freq = 5
+    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.5)
+    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.5)
+
+    # Combine lush sound with binaural beat
+    lush_sound_left = lush_sound + left_ear
+    lush_sound_right = lush_sound + right_ear
+
+    # Create stereo audio
+    stereo_audio = np.vstack((lush_sound_left, lush_sound_right)).T
+
     # Normalize the audio
-    lush_sound = librosa.util.normalize(lush_sound, norm=np.inf, axis=None)
+    stereo_audio = librosa.util.normalize(stereo_audio, norm=np.inf, axis=None)
 
     # Save the audio to a file
-    sf.write(output_file, lush_sound, sample_rate, format='wav')
+    sf.write(output_file, stereo_audio, sample_rate, format='wav', subtype='PCM_24')
 
     return output_file
-
 
 def generate_chord(start_freqs, end_freqs, duration, fm_intensity=0.01, fm_speed=0.1):
     num_notes = len(start_freqs)
@@ -176,56 +189,6 @@ def generate_background(img_size):
     pattern.set_extend(cairo.EXTEND_REPEAT)
 
     return pattern
-
-def mutate_shape(ctx, shape_type, x, y, width, height):
-    """
-    Modifies a shape to create a face.
-    """
-    if shape_type == 'rectangle':
-        # Create a square face
-        width = height = np.random.randint(img_size//4, img_size//2)
-        ctx.rectangle(x, y, width, height)
-    elif shape_type == 'circle':
-        # Add eyes and a mouth to the circle
-        radius = np.random.randint(img_size//4, img_size//2)
-        ctx.arc(x, y, radius, 0, 2 * np.pi)
-        eye_radius = radius // 5
-        eye_x_offset = radius // 2
-        eye_y_offset = radius // 2
-        mouth_width = radius // 2
-        mouth_height = radius // 3
-        mouth_y_offset = radius // 2
-        ctx.arc(x - eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
-        ctx.arc(x + eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
-        ctx.move_to(x - mouth_width//2, y + mouth_y_offset)
-        ctx.line_to(x + mouth_width//2, y + mouth_y_offset)
-        ctx.line_to(x + mouth_width//2, y + mouth_y_offset + mouth_height)
-        ctx.line_to(x - mouth_width//2, y + mouth_y_offset + mouth_height)
-        ctx.line_to(x - mouth_width//2, y + mouth_y_offset)
-    elif shape_type == 'triangle':
-        # Add eyes and a mouth to the triangle
-        x1, y1 = x, y - height//2
-        x2, y2 = x - width//2, y + height//2
-        x3, y3 = x + width//2, y + height//2
-        ctx.move_to(x1, y1)
-        ctx.line_to(x2, y2)
-        ctx.line_to(x3, y3)
-        ctx.line_to(x1, y1)
-        eye_radius = width // 10
-        eye_x_offset = width // 4
-        eye_y_offset = height // 4
-        mouth_width = width // 2
-        mouth_height = height // 3
-        mouth_y_offset = height // 2
-        ctx.arc(x - eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
-        ctx.arc(x + eye_x_offset, y - eye_y_offset, eye_radius, 0, 2 * np.pi)
-        ctx.move_to(x - mouth_width//2, y + mouth_y_offset)
-        ctx.line_to(x + mouth_width//2, y + mouth_y_offset)
-        ctx.line_to(x + mouth_width//2, y + mouth_y_offset + mouth_height)
-        ctx.line_to(x - mouth_width//2, y + mouth_y_offset + mouth_height)
-        ctx.line_to(x - mouth_width//2, y + mouth_y_offset)
-
-    return x, y, width, height
 
 
 def generate_visuals(duration, img_size, num_frames):
@@ -444,17 +407,132 @@ def generate_video(duration, img_size, fps, text_duration, num_generations=30, c
     video.write_videofile(video_path, fps=fps)
 
 
+def save_instagram_caption(caption, hashtags, filename="instagram_caption.txt"):
+    with open(filename, "w") as file:
+        file.write(caption)
+        file.write("\n\n. . .\n\n")
+        file.write(" ".join(hashtags))
 
 def get_random_hashtags(hashtags, num=7):
     return random.sample(hashtags, num)
 
-def generate_title(hashtags, num_words=3):
+def generate_title(hashtags, num_words=2):
     words = []
     for hashtag in hashtags:
         words += re.findall(r'\w+', hashtag)
-    title = "".join(random.sample(words, num_words)) + str(random.randint(1, 999))
+
+    combined_words = []
+    for _ in range(num_words):
+        word1 = random.choice(words)
+        word2 = random.choice(words)
+        word1_part = word1[:len(word1) // 2]
+        word2_part = word2[len(word2) // 2:]
+        combined_word = word1_part + word2_part
+        combined_words.append(combined_word)
+
+    title = " ".join(combined_words) + " " + str(random.randint(1, 999))
     return title
 
+def mandelbrot(c, max_iter):
+    z = c
+    for n in range(max_iter):
+        if abs(z) > 2:
+            return n
+        z = z * z + c
+    return max_iter
+
+def generate_fractal_layer(width, height):
+    zoom_factor = random.uniform(0.6, 1.5)
+    center_x = random.uniform(-2, 0.5)
+    center_y = random.uniform(-1.5, 1.5)
+
+    min_x, max_x = center_x - zoom_factor, center_x + zoom_factor
+    min_y, max_y = center_y - zoom_factor, center_y + zoom_factor
+    max_iter = 1000
+
+    img = Image.new("RGB", (width, height))
+    pixels = img.load()
+
+    color_shifts = (random.randint(1, 10), random.randint(1, 10), random.randint(1, 10))
+
+    for x in range(width):
+        for y in range(height):
+            real = min_x + (max_x - min_x) * x / (width - 1)
+            imag = min_y + (max_y - min_y) * y / (height - 1)
+            c = complex(real, imag)
+            color = mandelbrot(c, max_iter)
+            r = (color * color_shifts[0]) % 256
+            g = (color * color_shifts[1]) % 256
+            b = (color * color_shifts[2]) % 256
+            pixels[x, y] = (r, g, b)
+
+    return img
+
+def draw_circle(draw, center, radius, fill):
+    draw.ellipse([center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius], outline=fill)
+
+def draw_regular_polygon(draw, center, num_sides, radius, fill):
+    angle = 360 / num_sides
+    points = []
+    for i in range(num_sides):
+        x = center[0] + radius * cos(radians(i * angle))
+        y = center[1] + radius * sin(radians(i * angle))
+        points.append((x, y))
+    draw.polygon(points, outline=fill)
+
+def draw_vesica_piscis(draw, center, radius, fill):
+    draw_circle(draw, center, radius, fill)
+    draw_circle(draw, (center[0] + radius, center[1]), radius, fill)
+
+def draw_seed_of_life(draw, center, radius, fill):
+    draw_circle(draw, center, radius, fill)
+    for i in range(6):
+        x = center[0] + radius * cos(radians(i * 60))
+        y = center[1] + radius * sin(radians(i * 60))
+        draw_circle(draw, (x, y), radius, fill)
+
+def draw_sacred_geometry(img, emblem_size=100):
+    center = (img.size[0] // 2, img.size[1] // 2)
+    radius = emblem_size // 2
+    draw = ImageDraw.Draw(img)
+    fill = (255, 255, 255)
+
+    shapes = [
+        lambda: draw_circle(draw, center, radius, fill),
+        lambda: draw_regular_polygon(draw, center, 3, radius, fill),
+        lambda: draw_regular_polygon(draw, center, 4, radius, fill),
+        lambda: draw_regular_polygon(draw, center, 5, radius, fill),
+        lambda: draw_regular_polygon(draw, center, 6, radius, fill),
+        lambda: draw_vesica_piscis(draw, center, radius, fill),
+        lambda: draw_seed_of_life(draw, center, radius, fill)
+    ]
+
+    num_shapes = random.randint(1, 3)
+    selected_shapes = random.sample(shapes, num_shapes)
+    for shape in selected_shapes:
+        shape()
+
+def draw_text(img, text="Focal Point", font_path="Blox2.ttf", font_size=48):
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(font_path, font_size)
+    text_width, text_height = draw.textsize(text, font=font)
+
+    text_x = (img.size[0] - text_width) // 2
+    text_y = img.size[1] // 2 + 100
+
+    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
+
+def generate_image(width, height, num_layers=3, filename="fractal_image.png"):
+    base_image = generate_fractal_layer(width, height)
+
+    for _ in range(num_layers - 1):
+        layer = generate_fractal_layer(width, height)
+        base_image = ImageChops.blend(base_image, layer, alpha=0.5)
+
+    draw_sacred_geometry(base_image)
+    draw_text(base_image)
+
+    base_image.save(filename)
 
 if __name__ == "__main__":
     hashtags = [
@@ -489,6 +567,11 @@ if __name__ == "__main__":
 
     random_title = generate_title(hashtags)
     print("Random Title:", random_title)
+    
+    
+    
+    save_instagram_caption(random_title, random_hashtags)
+    generate_image(1080, 1080)
     duration = 25  # seconds
     img_size = 800  # Instagram square dimensions (1080x1080)
     fps = 30  # frames per second
@@ -498,6 +581,7 @@ if __name__ == "__main__":
     text_interval = random.randint(2, 6)
     text_duration = random.uniform(0.2, 1)
     num_segments = 1
+
 
     generate_audio(duration, num_segments)
     generate_video(
