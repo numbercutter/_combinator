@@ -6,7 +6,7 @@ from pydub import AudioSegment
 from moviepy.editor import AudioFileClip, ImageSequenceClip
 from moviepy.editor import TextClip, CompositeVideoClip
 from moviepy.editor import ImageClip
-
+import re
 import string
 import cairo
 from moviepy.editor import concatenate_videoclips
@@ -444,10 +444,50 @@ def generate_video(duration, img_size, fps, text_duration, num_generations=30, c
 
 
 
+def get_random_hashtags(hashtags, num=7):
+    return random.sample(hashtags, num)
 
+def generate_title(hashtags, num_words=3):
+    words = []
+    for hashtag in hashtags:
+        words += re.findall(r'\w+', hashtag)
+    title = "".join(random.sample(words, num_words)) + str(random.randint(1, 999))
+    return title
 
 
 if __name__ == "__main__":
+    hashtags = [
+    "#mindfulness", "#meditation", "#awareness", "#consciousness", "#presence", 
+    "#brainwaves", "#neuroscience", "#brainpower", "#cognitive", "#neural",
+    "#sacredgeometry", "#mandala", "#fractal", "#goldenratio", "#floweroflife",
+    "#ancientwisdom", "#spirituality", "#ancientknowledge", "#esoteric", "#mysticism",
+    "#soundscience", "#binauralbeats", "#soundhealing", "#frequency", "#vibration",
+    "#mindfulthinking", "#mindfulmovement", "#mindfulbreathing", "#mindfulawareness", "#mindfultravel",
+    "#meditationteachertraining", "#meditationtipsandtricks", "#meditationinspiration", "#meditationpractice",
+    "#consciousnessshift", "#consciouscommunity", "#consciousawakening", "#consciousliving", "#consciouslife",
+    "#brainhacks", "#braintrainingtips", "#cognitiverehabilitation", "#neuralplasticitytraining", "#neuroplasticityresearch",
+    "#sacredgeometryjewelry", "#sacredgeometrytattoo", "#mandalapainting", "#fractalartwork", "#goldenratiopattern",
+    "#floweroflifemandalas", "#ancientegypt", "#ancientcivilizations", "#spiritualgrowth", "#spiritualenlightenment",
+    "#esotericphilosophy", "#mysticalteachings", "#soundscapes", "#binauralbeatsfrequency", "#soundtherapyhealing",
+    "#frequencyhealing", "#vibrationtherapy", "#mindfulbeauty", "#mindfulwellness", "#mindfulnutrition", "#mindfulfitness",
+    "#meditationmusician", "#meditationretreats", "#meditationcenter", "#consciousnesscoaching", "#consciousparenting",
+    "#brainboosters", "#brainimprovement", "#cognitiveenhancement", "#neuralscience", "#sacredgeometrydesigns",
+    "#mandaladesign", "#fractalgeometry", "#goldenratioart", "#floweroflifeartwork", "#ancientknowledgekeeper",
+    "#spiritualjourneys", "#esotericmysticism", "#soundhealingtherapy", "#binauralbeatsmeditations", "#vibrationmedicine",
+    "#mindfulleadership", "#mindfulentrepreneur", "#mindfulmanagement", "#meditationbenefitsresearch", "#consciousrelationships",
+    "#braintraininggames", "#neuralstimulation", "#sacredgeometryartwork", "#mandalawallpaper", "#fractalnature",
+    "#goldenratiophotography", "#floweroflifepatterns", "#ancienthealing", "#spiritualawakeningprocess",
+    "#esotericwisdom", "#mysticalhealing", "#soundhealingmeditation", "#binauralbeatsmusic", "#vibrationhealing",
+    "#mindfularttherapy", "#mindfulhiking", "#mindfulyoga", "#meditationfestival", "#consciouscommunitybuilding",
+    "#brainwaveentrainment", "#neuroplasticityexercise", "#sacredgeometryartist", "#mandalastones", "#fractalpatterns",
+    "#goldenratiogarden", "#floweroflifetattoos", "#ancienttexts", "#spiritualunderstanding", "#esoterictraditions",
+    "#mysticalliving", "#soundhealingtherapy", "#binauralbeatstherapy"
+    ]
+    random_hashtags = get_random_hashtags(hashtags)
+    print("Random Hashtags:", random_hashtags)
+
+    random_title = generate_title(hashtags)
+    print("Random Title:", random_title)
     duration = 25  # seconds
     img_size = 800  # Instagram square dimensions (1080x1080)
     fps = 30  # frames per second
