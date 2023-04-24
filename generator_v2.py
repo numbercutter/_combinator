@@ -13,8 +13,9 @@ import cairo
 from moviepy.editor import concatenate_videoclips
 import librosa
 import soundfile as sf
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
+from pydub.effects import high_pass_filter  # Added import for high_pass_filter
+
+
 solfeggio_freqs = {
     "UT": 396 / 4,
     "RE": 417 / 4,
@@ -23,6 +24,10 @@ solfeggio_freqs = {
     "SOL": 741 / 4,
     "LA": 852 / 4,
 }
+
+def apply_high_pass_filter(audio_segment, cutoff_freq=150):
+    filtered_audio = high_pass_filter(audio_segment, cutoff_freq)
+    return filtered_audio
 
 def generate_sine_wave(freq, duration, sample_rate, amplitude=1.0):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
@@ -33,12 +38,25 @@ def apply_fade(audio, fade_in_samples, fade_out_samples):
     audio[-fade_out_samples:] *= np.linspace(1, 0, fade_out_samples)
     return audio
 
+
 def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav'):
     sample_rate = 44100
 
+    # Define the different chords to use
+    chords = [
+        [110, 165, 220],  # A minor
+        [130, 195, 260],  # C major
+        [146, 220, 293],  # D major
+        [164, 246, 329],  # E major
+        [196, 294, 392],  # G major
+    ]
+
+    # Select a random chord to use
+    selected_chord = random.choice(chords)
+
     # Set the frequencies, amplitudes, and fade times for the deep ambient sound
-    freqs = [50, 100, 150, 225, 300, 360]  # Added lower frequencies
-    amps = [0.5, 0.4, 0.4, 0.3, 0.2, 0.1]  # Adjusted amplitudes
+    freqs = [f * random.uniform(0.9, 1.1) for f in selected_chord]  # Randomize frequency slightly
+    amps = [0.5, 0.4, 0.4]  # Adjusted amplitudes
     fade_time = int(0.25 * sample_rate)  # 0.25 seconds
 
     # Generate sine waves with the given frequencies and amplitudes
@@ -74,6 +92,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     sf.write(output_file, stereo_audio, sample_rate, format='wav', subtype='PCM_24')
 
     return output_file
+
 
 def generate_chord(start_freqs, end_freqs, duration, fm_intensity=0.01, fm_speed=0.1):
     num_notes = len(start_freqs)
@@ -165,10 +184,13 @@ def generate_audio(duration, num_segments=1):
     hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
 
     # Concatenate the hook audio with the rest of the audio
-    full_audio = hook_audio.append(full_audio)  # Changed this line
+    full_audio = hook_audio.append(full_audio)
 
-    # Export the audio to a WAV file
-    full_audio.export("audio_.wav", format="wav")
+    # Apply the high-pass filter to the full audio
+    filtered_audio = apply_high_pass_filter(full_audio)
+
+    # Export the filtered audio to a WAV file
+    filtered_audio.export("audio_.wav", format="wav")
 
 def generate_background(img_size):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
@@ -564,6 +586,8 @@ if __name__ == "__main__":
     ]
     random_hashtags = get_random_hashtags(hashtags)
     print("Random Hashtags:", random_hashtags)
+    
+    random_hashtags += ["#getoffinstagram", "#focusonyourgoals"] # add the two new hashtags
 
     random_title = generate_title(hashtags)
     print("Random Title:", random_title)
@@ -573,7 +597,7 @@ if __name__ == "__main__":
     save_instagram_caption(random_title, random_hashtags)
     generate_image(1080, 1080)
     duration = 25  # seconds
-    img_size = 800  # Instagram square dimensions (1080x1080)
+    img_size = 1000  # Instagram square dimensions (1080x1080)
     fps = 30  # frames per second
 
     num_generations = random.randint(20, 50)
