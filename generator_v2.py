@@ -56,7 +56,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     # Set the frequencies, amplitudes, and fade times for the deep ambient sound
     freqs = [f * random.uniform(0.9, 1.1) for f in selected_chord]  # Randomize frequency slightly
-    amps = [0.5, 0.4, 0.4]  # Adjusted amplitudes
+    amps = [0.3, 0.4, 0.2]  # Adjusted amplitudes
     fade_time = int(0.25 * sample_rate)  # 0.25 seconds
 
     # Generate sine waves with the given frequencies and amplitudes
@@ -73,10 +73,21 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     # Apply fade in and fade out to create smooth transitions
     lush_sound = apply_fade(lush_sound, fade_time, fade_time)
 
-    # Generate binaural beat (e.g., 5 Hz difference for theta waves)
-    binaural_freq = 5
-    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.5)
-    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.5)
+    # Map brainwave states to corresponding binaural frequencies
+    binaural_freqs = {
+        "theta": 5,
+        "alpha": 10,
+        "beta": 20,
+        "gamma": 30,
+    }
+
+    # Select a random brainwave state from the list
+    brainwave_state = random.choice(binaural_freqs)
+
+    # Generate binaural beat with the selected frequency
+    binaural_freq = binaural_freqs[brainwave_state]
+    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.2)
+    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.2)
 
     # Combine lush sound with binaural beat
     lush_sound_left = lush_sound + left_ear
