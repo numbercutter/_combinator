@@ -1,12 +1,11 @@
 import os
 import random
 import numpy as np
-
-from pydub import AudioSegment
-
 import librosa
 import soundfile as sf
 from pydub.effects import high_pass_filter  # Added import for high_pass_filter
+from pydub import AudioSegment, effects
+from pydub.generators import WhiteNoise
 
 
 solfeggio_freqs = {
@@ -165,25 +164,38 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     return output_file
 
-def generate_amen_break_drum_loop(tempo=160, pattern_length=16):
-    # Load Amen Break samples (replace with your own file paths)
-    kick = AudioSegment.from_file("kick.wav")
-    snare = AudioSegment.from_file("snare.wav")
-    hihat = AudioSegment.from_file("hihat.wav")
 
-    samples = [kick, snare, hihat]
+def generate_drum_pattern(patterns, tempo=190, filename="drum_pattern.wav", bars=4):
+    kick = AudioSegment.from_file("samples/kick.wav")
+    snare = AudioSegment.from_file("samples/snare.wav")
+    hihat = AudioSegment.from_file("samples/hihat.wav")
+    drum_pattern = AudioSegment.silent(duration=0)
 
-    # Generate a random drum pattern
-    pattern = [random.choice(samples) for _ in range(pattern_length)]
+    steps_per_beat = 4  # Each beat has 4 steps (16th notes)
+    beat_duration = (60000 / tempo) / steps_per_beat
 
-    # Create an empty audio segment
-    drum_loop = AudioSegment.silent(duration=0)
+    priority_order = ['kick', 'snare', 'hihat']
+    samples = {'kick': kick, 'snare': snare, 'hihat': hihat}
 
-    # Calculate the duration of each drum hit based on the tempo
-    beat_duration = 60000 / tempo  # in milliseconds
+    for bar in range(bars):
+        bar_segment = AudioSegment.silent(duration=0)
+        for i in range(len(patterns["kick"])):
+            beat_segment = AudioSegment.silent(duration=int(beat_duration))
+            sample_added = False
+            for priority_sample in priority_order:
+                if patterns[priority_sample][i] == "x" and not sample_added:
+                    sample = samples[priority_sample]
+                    beat_segment = beat_segment.overlay(sample)
+                    sample_added = True
+            bar_segment += beat_segment
+        drum_pattern += bar_segment
 
-    # Sequence the drum pattern
-    for hit in pattern:
-        drum_loop += hit[:beat_duration] + AudioSegment.silent(duration=beat_duration - len(hit))
+    drum_pattern.export(filename, format="wav")
+    return drum_pattern
 
-    return drum_loop
+
+
+
+
+
+

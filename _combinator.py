@@ -8,7 +8,7 @@ from moviepy.editor import concatenate_videoclips
 from pydub import AudioSegment  # Ensure this import is here
 import librosa
 import soundfile as sf
-from audio import apply_high_pass_filter, generate_chord, solfeggio_freqs, generate_soothing_sound_bath
+from audio import apply_high_pass_filter, generate_chord, solfeggio_freqs, generate_soothing_sound_bath, generate_drum_pattern
 from visual import generate_visuals, generate_image, generate_random_text, get_random_hashtags, generate_title, save_instagram_caption
 
 
@@ -37,14 +37,35 @@ def generate_audio(duration, num_segments=1):
     hook_audio_file = generate_soothing_sound_bath(3)
     hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
 
-    # Concatenate the hook audio with the rest of the audio
-    full_audio = hook_audio.append(full_audio)
-
     # Apply the high-pass filter to the full audio
     filtered_audio = apply_high_pass_filter(full_audio)
 
-    # Export the filtered audio to a WAV file
-    filtered_audio.export("audio_.wav", format="wav")
+    # Calculate the non-hook portion of the audio duration
+    non_hook_duration = len(filtered_audio) - len(hook_audio)
+
+    # Generate a drum pattern matching the non-hook portion of the audio
+    patterns = {
+        "kick": ["x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "-", "-", "-"],
+        "snare": ["-", "-", "-", "-", "x", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "-"],
+        "hihat": ["x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-"]
+    }
+    tempo = 190
+    drum_loop = generate_drum_pattern(patterns, tempo, "drum_pattern.wav")
+
+    # Repeat the drum loop until it reaches the end of the full audio
+    while len(drum_loop) < len(filtered_audio) - len(hook_audio):
+        drum_loop += drum_loop
+    drum_loop = drum_loop[:len(filtered_audio) - len(hook_audio)]  # Trim the drum loop if necessary
+
+    # Mix the drum loop with the non-hook portion of the filtered audio
+    mixed_audio_non_hook = filtered_audio[len(hook_audio):].overlay(drum_loop)
+
+    # Concatenate the hook audio with the mixed non-hook audio
+    mixed_audio = hook_audio + mixed_audio_non_hook
+
+    # Export the mixed audio to a WAV file
+    mixed_audio.export("audio_.wav", format="wav")
+
 
     
 def generate_video(duration, img_size, fps, text_duration, num_generations=30, crossfade_duration=0):
@@ -176,6 +197,7 @@ if __name__ == "__main__":
 
 
     generate_audio(duration, num_segments)
+
     generate_video(
         duration,
         img_size,
@@ -184,3 +206,4 @@ if __name__ == "__main__":
         crossfade_duration=crossfade_duration,
         text_duration=text_duration,
     )
+
