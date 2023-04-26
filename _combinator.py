@@ -185,7 +185,7 @@ if __name__ == "__main__":
     
     save_instagram_caption(random_title, random_hashtags)
     generate_image(1080, 1080)
-    duration = 12  # seconds
+    duration = 20  # seconds
     img_size = 1000  # Instagram square dimensions (1080x1080)
     fps = 30  # frames per second
 

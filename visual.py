@@ -232,15 +232,16 @@ def generate_fractal_layer(width, height):
 
     return img
 
+
 def draw_circle(draw, center, radius, fill):
     draw.ellipse([center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius], outline=fill)
+
 def draw_tree_of_life(draw, center, radius, fill):
     draw_seed_of_life(draw, center, radius, fill)
     for i in range(3):
         x = center[0] + radius * cos(radians(i * 120))
         y = center[1] + radius * sin(radians(i * 120))
         draw_regular_polygon(draw, (x, y), 6, radius, fill)
-
 
 def draw_merkaba(draw, center, radius, fill):
     draw_regular_polygon(draw, center, 3, radius, fill)
@@ -282,13 +283,124 @@ def draw_sacred_geometry(img, emblem_size=100):
         lambda: draw_seed_of_life(draw, center, radius, fill),
         lambda: draw_tree_of_life(draw, center, radius, fill),
         lambda: draw_merkaba(draw, center, radius, fill),
-
+        lambda: draw_flower_of_life(draw, center, radius, fill),
+        lambda: draw_sri_yantra(draw, center, radius, fill),
+        lambda: draw_torus(draw, center, radius, fill),
+        lambda: draw_metatrons_cube(draw, center, radius, fill),
+        lambda: draw_infinity_symbol(draw, center, radius, fill),
+        lambda: draw_enneagram(draw, center, radius, fill),
+        lambda: draw_tetrahedron(draw, center, radius, fill),
+        lambda: draw_icosahedron(draw, center, radius, fill),
+        lambda: draw_golden_spiral(draw, center, radius, fill),
+        # add more shapes here
     ]
 
     num_shapes = random.randint(1, 3)
     selected_shapes = random.sample(shapes, num_shapes)
     for shape in selected_shapes:
         shape()
+           
+                                 
+def draw_flower_of_life(draw, center, radius, fill):
+    draw_circle(draw, center, radius, fill)
+    for i in range(6):
+        x = center[0] + radius * cos(radians(i * 60))
+        y = center[1] + radius * sin(radians(i * 60))
+        draw_circle(draw, (x, y), radius, fill)
+        for j in range(5):
+            x1 = x + radius * cos(radians(j * 72))
+            y1 = y + radius * sin(radians(j * 72))
+            draw_circle(draw, (x1, y1), radius, fill)
+
+def draw_sri_yantra(draw, center, radius, fill):
+    draw_circle(draw, center, radius, fill)
+    for i in range(6):
+        x = center[0] + radius * cos(radians(i * 60))
+        y = center[1] + radius * sin(radians(i * 60))
+        draw_regular_polygon(draw, (x, y), 3, radius / 2, fill, rotation=30)
+        for j in range(3):
+            x1 = x + radius / 2 * cos(radians(j * 120))
+            y1 = y + radius / 2 * sin(radians(j * 120))
+            draw_circle(draw, (x1, y1), radius / 6, fill)
+
+    draw_circle(draw, center, radius / 2, fill)
+    for i in range(3):
+        x = center[0] + radius / 2 * cos(radians(i * 120))
+        y = center[1] + radius / 2 * sin(radians(i * 120))
+        draw_regular_polygon(draw, (x, y), 3, radius / 6, fill, rotation=30)
+
+    draw_regular_polygon(draw, center, 3, radius / 6, fill)
+
+def draw_torus(draw, center, radius, fill):
+    num_points = 50
+    points = []
+    for i in range(num_points):
+        angle = 2 * i * radians(360) / num_points
+        x = center[0] + (radius + radius / 2 * cos(angle)) * cos(angle)
+        y = center[1] + (radius + radius / 2 * cos(angle)) * sin(angle)
+        points.append((x, y))
+    draw.polygon(points, outline=fill)
+
+def draw_metatrons_cube(draw, center, radius, fill):
+    draw_regular_polygon(draw, center, 3, radius, fill)
+    for i in range(3):
+        x = center[0] + radius * cos(radians(i * 120))
+        y = center[1] + radius * sin(radians(i * 120))
+        draw_regular_polygon(draw, (x, y), 4, radius / 2, fill, rotation=45)
+        draw_regular_polygon(draw, (x, y), 3, radius / 2 * 3 ** 0.5, fill)
+
+def draw_infinity_symbol(draw, center, radius, fill):
+    draw_regular_polygon(draw, center, 3, radius, fill, rotation=30)
+    draw_regular_polygon(draw, center, 3, radius, fill, rotation=150)
+    draw_circle(draw, center, radius / 3, fill)
+    draw_circle(draw, center, radius / 3, fill)
+
+def draw_enneagram(draw, center, radius, fill):
+    angle = 360 / 9
+    points = []
+    for i in range(9):
+        x = center[0] + radius * cos(radians(i * angle))
+        y = center[1] + radius * sin(radians(i * angle))
+        points.append((x, y))
+        draw_circle(draw, (x, y), radius / 3, fill)
+
+    for i in range(9):
+        draw.line((points[i], points[(i + 3) % 9]), fill=fill)
+        draw.line((points[i], points[(i + 6) % 9]), fill=fill)
+
+def draw_tetrahedron(draw, center, radius, fill):
+    p = 3 ** 0.5 / 3
+    points = [
+        (center[0], center[1] - 2 * radius / (3 * p)),
+        (center[0] + radius / 2, center[1] + radius / (3 * p)),
+        (center[0] - radius / 2, center[1] + radius / (3 * p)),
+        (center[0], center[1] + radius / p),
+    ]
+    draw.polygon(points, outline=fill)
+
+def draw_icosahedron(draw, center, radius, fill):
+    p = (1 + 5 ** 0.5) / 2
+    points = [
+        (center[0], center[1] - radius / p),
+        (center[0] - radius / 2, center[1] - 0.5 * radius / p),
+        (center[0] + radius / 2, center[1] - 0.5 * radius / p),
+        (center[0], center[1] + radius / p),
+        (center[0] - radius / p, center[1]),
+        (center[0] + radius / p, center[1]),
+    ]
+    draw.polygon(points, outline=fill)
+
+def draw_golden_spiral(draw, center, radius, fill):
+    num_points = 100
+    angle = 0
+    golden_ratio = (1 + 5 ** 0.5) / 2
+    for i in range(num_points):
+        angle += radians(360 / num_points)
+        r = radius * golden_ratio ** angle
+        x = center[0] + r * cos(angle)
+        y = center[1] + r * sin(angle)
+        draw.point((x, y), fill=fill)
+
 
 def draw_text(img, text="Focal Point", font_path="Blox2.ttf", font_size=48):
     draw = ImageDraw.Draw(img)
