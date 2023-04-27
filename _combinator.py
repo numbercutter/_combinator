@@ -8,7 +8,7 @@ from moviepy.editor import concatenate_videoclips
 from pydub import AudioSegment  # Ensure this import is here
 import librosa
 import soundfile as sf
-from audio import apply_high_pass_filter, generate_chord, solfeggio_freqs, generate_soothing_sound_bath, generate_drum_pattern
+from audio import apply_high_pass_filter, generate_soothing_sound_bath, generate_drum_pattern, generate_ambient_pattern, generate_bass_pattern, generate_cymbal_pattern, generate_chord, solfeggio_freqs, generate_simple_chord
 from visual import generate_visuals, generate_image, generate_random_text, get_random_hashtags, generate_title, save_instagram_caption
 
 
@@ -17,15 +17,13 @@ from visual import generate_visuals, generate_image, generate_random_text, get_r
 def generate_audio(duration, num_segments=1):
     segment_duration = duration / num_segments
 
-    # Create a list of all solfeggio frequencies
-    freq_list = list(solfeggio_freqs.values())
-
+    
     # Generate the audio segments
     audio_segments = []
     for _ in range(num_segments):
-        start_freqs = random.sample(freq_list, 3)
-        end_freqs = random.sample(freq_list, 3)
-        chord = generate_chord(start_freqs, end_freqs, segment_duration)
+        
+        
+        chord = generate_simple_chord(duration=segment_duration)
         audio_segments.append(chord)
 
     # Concatenate audio segments
@@ -37,34 +35,33 @@ def generate_audio(duration, num_segments=1):
     hook_audio_file = generate_soothing_sound_bath(3)
     hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
 
-    # Apply the high-pass filter to the full audio
+    full_audio = AudioSegment.from_wav(full_audio)
     filtered_audio = apply_high_pass_filter(full_audio)
 
-    # Calculate the non-hook portion of the audio duration
-    non_hook_duration = len(filtered_audio) - len(hook_audio)
 
-    # Generate a drum pattern matching the non-hook portion of the audio
-    patterns = {
-        "kick": ["x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "-", "-", "-"],
-        "snare": ["-", "-", "-", "-", "x", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "-"],
-        "hihat": ["x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-"]
-    }
-    tempo = 190
-    drum_loop = generate_drum_pattern(patterns, tempo, "drum_pattern.wav")
+    drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=8)
 
-    # Repeat the drum loop until it reaches the end of the full audio
-    while len(drum_loop) < len(filtered_audio) - len(hook_audio):
+    # Determine the length of the longest loop
+    max_loop_length = len(drum_loop)
+
+    # Repeat the drum loop until it reaches the desired duration
+    while len(drum_loop) < duration * 1000:
         drum_loop += drum_loop
-    drum_loop = drum_loop[:len(filtered_audio) - len(hook_audio)]  # Trim the drum loop if necessary
 
-    # Mix the drum loop with the non-hook portion of the filtered audio
-    mixed_audio_non_hook = filtered_audio[len(hook_audio):].overlay(drum_loop)
+    # Trim the drum loop if necessary
+    drum_loop = drum_loop[:duration * 1000]
 
-    # Concatenate the hook audio with the mixed non-hook audio
-    mixed_audio = hook_audio + mixed_audio_non_hook
+    # Mix the filtered audio with the drum loop
+    mixed_audio = drum_loop.overlay(filtered_audio)
+
+    # Concatenate the hook audio with the mixed audio
+    mixed_audio = hook_audio + mixed_audio
 
     # Export the mixed audio to a WAV file
-    mixed_audio.export("audio_.wav", format="wav")
+    mixed_audio.export("audio.wav", format="wav")
+
+
+
 
 
     
@@ -120,7 +117,7 @@ def generate_video(duration, img_size, fps, text_duration, num_generations=30, c
     )
     hook_text_clip = (TextClip(hook_text, fontsize=30, font="Arial", color="white", size=video.size, method='caption')
                   .set_position("center")
-                  .set_duration(5))
+                  .set_duration(3))
 
 
 
@@ -171,7 +168,20 @@ if __name__ == "__main__":
     "#mindfularttherapy", "#mindfulhiking", "#mindfulyoga", "#meditationfestival", "#consciouscommunitybuilding",
     "#brainwaveentrainment", "#neuroplasticityexercise", "#sacredgeometryartist", "#mandalastones", "#fractalpatterns",
     "#goldenratiogarden", "#floweroflifetattoos", "#ancienttexts", "#spiritualunderstanding", "#esoterictraditions",
-    "#mysticalliving", "#soundhealingtherapy", "#binauralbeatstherapy"
+    "#mysticalliving", "#soundhealingtherapy", "#binauralbeatstherapy", "#personalfinance", "#investing", "#moneytips", "#budgeting", "#wealthmanagement", 
+    "#financialfreedom", "#retirementplanning", "#stocks", "#cryptocurrency", "#entrepreneurship", 
+    "#taxes", "#creditcards", "#debtfree", "#financialplanning", "#savingmoney", "#investmentstrategies", 
+    "#moneymanagement", "#financialadvice", "#stockmarket", "#economics", "#businessgrowth", 
+    "#financialliteracy", "#financialindependence", "#investments",  "#fitfam", "#workoutmotivation", "#fitnessgoals", "#fitnessjourney", "#healthyhabits", 
+    "#gymlife", "#fitspo", "#personaltrainer", "#fitnesschallenge", "#cardio", 
+    "#weightlifting", "#yoga", "#running", "#HIIT", "#crossfit", "#fitnessinspiration", 
+    "#bodybuilding", "#fitnessmodel", "#healthydiet", "#nutrition", "#fitnesstips", 
+    "#fitnesstransformation", "#fitnessaddict", "#fitnesscommunity", "#fitnessequipment",
+    "#funnyvideos", "#jokes", "#humor", "#comedycentral", "#laughoutloud", 
+    "#standupcomedy", "#memes", "#comedyclub", "#satire", "#parody", 
+    "#roast", "#improv", "#sketchcomedy", "#funnyclips", "#pranks", 
+    "#humorous", "#comedian", "#humorist", "#funnybone", "#humorouscontent", 
+    "#comedyshow", "#funnythoughts", "#funnymoments", "#comedygold"
     ]
     random_hashtags = get_random_hashtags(hashtags)
     print("Random Hashtags:", random_hashtags)
@@ -198,6 +208,7 @@ if __name__ == "__main__":
 
     generate_audio(duration, num_segments)
 
+    """
     generate_video(
         duration,
         img_size,
@@ -206,4 +217,4 @@ if __name__ == "__main__":
         crossfade_duration=crossfade_duration,
         text_duration=text_duration,
     )
-
+    """
