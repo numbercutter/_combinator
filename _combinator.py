@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
     generate_audio(duration, num_segments)
 
-    """
+
     generate_video(
         duration,
         img_size,
@@ -217,4 +217,4 @@ if __name__ == "__main__":
         crossfade_duration=crossfade_duration,
         text_duration=text_duration,
     )
-    """
+

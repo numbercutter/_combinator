@@ -82,10 +82,9 @@ def apply_lfo_filter(audio, lfo_freq=0.5, lfo_amp=0.05):
     return audio_filtered
 
 
-def generate_simple_chord(freqs, duration, output_file='simple_chord.wav', fm_intensity=0.01, fm_speed=0.1):
+def generate_simple_chord(duration, output_file='simple_chord.wav', fm_intensity=0.01, fm_speed=0.1):
     # Select a random chord progression to use
     selected_chord_progression = random.choice(chord_progressions)
-    
 
     sample_rate = 44100
     duration_ms = duration * 1000  # Convert duration to milliseconds
@@ -96,25 +95,34 @@ def generate_simple_chord(freqs, duration, output_file='simple_chord.wav', fm_in
     # Generate sine wave for each note in the chord
     chord = []
 
-    for note_freq in selected_chord_progression:
-        # Generate sine waves for harmonics
-        harmonics = np.zeros_like(t)
-        max_harmonic = int(1000 / note_freq)
-        for harmonic in range(1, max_harmonic + 1):
-            sine_wave = (
-                0.5 * np.sin(2 * np.pi * note_freq * harmonic * t) / harmonic
-            ).astype(np.float32)
-            harmonics += sine_wave
+    for note_set in selected_chord_progression:
+        harmonics_set = []
+        for note_freq in note_set:
+            # Generate sine waves for harmonics
+            harmonics = np.zeros_like(t)
+            max_harmonic = int(1000 / note_freq)
+            for harmonic in range(1, max_harmonic + 1):
+                sine_wave = (
+                    0.5 * np.sin(2 * np.pi * note_freq * harmonic * t) / harmonic
+                ).astype(np.float32)
+                harmonics += sine_wave
 
-        # Apply frequency modulation
-        fm = np.sin(2 * np.pi * fm_speed * t) * fm_intensity * note_freq
-        modulated_freq = note_freq + fm
-        modulated_sine_wave = 0.5 * np.sin(2 * np.pi * modulated_freq * t).astype(
-            np.float32
-        )
-        harmonics = 0.5 * harmonics + 0.5 * modulated_sine_wave
+            # Apply frequency modulation
+            fm = np.sin(2 * np.pi * fm_speed * t) * fm_intensity * note_freq
+            modulated_freq = note_freq + fm
+            modulated_sine_wave = 0.5 * np.sin(2 * np.pi * modulated_freq * t).astype(
+                np.float32
+            )
+            harmonics = 0.5 * harmonics + 0.5 * modulated_sine_wave
 
-        chord.append(harmonics)
+            harmonics_set.append(harmonics)
+
+        # Combine harmonics to create a chord
+        chord_data = np.zeros_like(harmonics_set[0])
+        for note_data in harmonics_set:
+            chord_data += note_data
+
+        chord.append(chord_data)
 
     # Combine sine waves to create chord
     chord_data = np.zeros_like(chord[0])
