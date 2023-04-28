@@ -39,7 +39,7 @@ def generate_audio(duration, num_segments=1):
     filtered_audio = apply_high_pass_filter(full_audio)
 
 
-    drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=8)
+    drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
@@ -58,7 +58,7 @@ def generate_audio(duration, num_segments=1):
     mixed_audio = hook_audio + mixed_audio
 
     # Export the mixed audio to a WAV file
-    mixed_audio.export("audio.wav", format="wav")
+    mixed_audio.export("audio_.wav", format="wav")
 
 
 
