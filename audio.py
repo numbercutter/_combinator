@@ -169,13 +169,6 @@ def apply_fade(audio, fade_in_samples, fade_out_samples):
     audio[-fade_out_samples:] *= np.linspace(1, 0, fade_out_samples)
     return audio
 
-
-def apply_fade(audio, fade_in_samples, fade_out_samples):
-    audio[:fade_in_samples] *= np.linspace(0, 1, fade_in_samples)
-    audio[-fade_out_samples:] *= np.linspace(1, 0, fade_out_samples)
-    return audio
-
-
 def generate_chord(start_freqs, end_freqs, duration, fm_intensity=0.01, fm_speed=0.1):
     num_notes = len(start_freqs)
     assert num_notes == len(
@@ -328,130 +321,62 @@ def generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=8):
     hihat = AudioSegment.from_file("samples/hihat.wav")
     drum_pattern = AudioSegment.silent(duration=0)
 
-    # Add a new pattern for glitchy sounds
-    glitch_samples = {
-        "glitch1": AudioSegment.from_file("samples/crash.wav"),
-        "glitch2": AudioSegment.from_file("samples/tom.wav"),
-    }
-
     patterns = {
         "kick": ["x", "-", "-", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "-", "-", "-"],
         "snare": ["-", "-", "-", "-", "x", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "-"],
-        "hihat": ["x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-"],
-        "glitch": ["-"] * 16  # Initialize an empty pattern for glitchy sounds
+        "hihat": ["x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-"]
     }
 
     tempo = 190
 
     steps_per_beat = 4
-    steps_per_glitch = 16
     beat_duration = (60000 / tempo) / steps_per_beat
-    glitch_duration = beat_duration / steps_per_glitch
 
-    priority_order = ['kick', 'snare', 'hihat', 'glitch']  # Add 'glitch' to the priority order
-    samples = {'kick': kick, 'snare': snare, 'hihat': hihat, **glitch_samples}  # Add glitch samples
+    priority_order = ['kick', 'snare', 'hihat']
+    samples = {'kick': kick, 'snare': snare, 'hihat': hihat}
 
     for bar in range(bars):
         bar_segment = AudioSegment.silent(duration=0)
         for i in range(len(patterns["kick"])):
             beat_segment = AudioSegment.silent(duration=int(beat_duration))
-            glitch_segment = AudioSegment.silent(duration=int(glitch_duration))
 
-            # Apply random glitch to patterns
             glitched_patterns = {key: apply_random_glitch(samples, patterns[key], 0.2) for key in patterns}
 
-            # Update the glitch pattern with a 1/64 grid
-            glitched_patterns['glitch'] = generate_random_pattern(glitch_samples, 64, probability=0.1)
-
-            for glitch_step in range(steps_per_glitch):
+            for beat_step in range(steps_per_beat):
                 sample_added = False
                 for priority_sample in priority_order:
                     if glitched_patterns[priority_sample][i] == "x" and not sample_added:
                         sample = samples[priority_sample]
-                        # Apply a volume adjustment to the glitch sample to prevent clipping
-                        glitch_segment = glitch_segment.overlay(sample - 12)
+                        beat_segment = beat_segment.overlay(sample - 6)
                         sample_added = True
-                glitch_segment += AudioSegment.silent(duration=int(glitch_duration))
 
-            # Apply a volume adjustment to the entire glitch segment to prevent clipping
-            glitch_segment = glitch_segment - 6
-            beat_segment = beat_segment.overlay(glitch_segment)
             bar_segment += beat_segment
 
-        # Apply a volume adjustment to the entire bar segment to prevent clipping
-        bar_segment = bar_segment - 3
         drum_pattern += bar_segment
 
     drum_pattern.export(filename, format="wav")
     return drum_pattern
 
+def generate_bass_pattern(tempo, duration, bars):
+    bass_notes = [20, 40, 60, 80, 100, 150, 200, 250, 300]  # A list of bass frequencies
+    steps_per_beat = 4
+    beat_duration = (60000 / tempo) / steps_per_beat
 
-def generate_bass_pattern(tempo=190, filename="bass_pattern.wav", bars=8):
-    bass = AudioSegment.from_file("samples/crash.wav")
-    bass_pattern = AudioSegment.silent(duration=0)
-    steps_per_bar = 16
-    beat_duration = (60000 / tempo) / 4
-    
-    pattern = ["-"]*16 + ["x"]*8 + ["-"]*8 + ["x"]*4 + ["-"]*4 + ["x"]*4 + ["-"]*4
-    
+    bass_pattern = []
+
     for bar in range(bars):
-        bar_segment = AudioSegment.silent(duration=0)
-        for i in range(steps_per_bar):
-            if pattern[i] == "x":
-                bar_segment += bass
+        for step in range(steps_per_beat * 4):  # Assuming 4 beats per bar
+            if random.random() < 0.3:  # Adjust probability of a note being played
+                bass_note = random.choice(bass_notes)
+                bass_pattern.append((bass_note, int(beat_duration)))
             else:
-                bar_segment += AudioSegment.silent(duration=int(beat_duration))
-        # Apply a volume adjustment to the entire bar segment to prevent clipping
-        bar_segment = bar_segment - 3
-        bass_pattern += bar_segment
+                bass_pattern.append(None)
 
-    bass_pattern.export(filename, format="wav")
     return bass_pattern
 
-
-def generate_ambient_pattern(tempo=190, filename="ambient_pattern.wav", bars=8):
-    ambient = AudioSegment.from_file("samples/hihat.wav")
-    ambient_pattern = AudioSegment.silent(duration=0)
-    steps_per_bar = 8
-    beat_duration = (60000 / tempo) / 2
-    
-    pattern = ["x", "-", "-", "-", "x", "-", "-", "-", "x", "-", "-", "-", "x", "-", "-", "-"]
-    
-    for bar in range(bars):
-        bar_segment = AudioSegment.silent(duration=0)
-        for i in range(steps_per_bar):
-            if pattern[i] == "x":
-                bar_segment += ambient
-            else:
-                bar_segment += AudioSegment.silent(duration=int(beat_duration))
-        # Apply a volume adjustment to the entire bar segment to prevent clipping
-        bar_segment = bar_segment - 6
-        ambient_pattern += bar_segment
-
-    ambient_pattern.export(filename, format="wav")
-    return ambient_pattern
-
-
-def generate_cymbal_pattern(tempo=190, filename="cymbal_pattern.wav", bars=8):
-    cymbal = AudioSegment.from_file("samples/tom.wav")
-    cymbal_pattern = AudioSegment.silent(duration=0)
-    steps_per_bar = 16
-    beat_duration = (60000 / tempo) / 4
-    
-    pattern = ["-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x"]
-    
-    for bar in range(bars):
-        bar_segment = AudioSegment.silent(duration=0)
-        for i in range(steps_per_bar):
-            if pattern[i] == "x":
-                bar_segment += cymbal.fade_in(duration=int(beat_duration/2)).fade_out(duration=int(beat_duration/2))
-            else:
-                bar_segment += AudioSegment.silent(duration=int(beat_duration))
-        # Apply a volume adjustment to the entire bar segment to prevent clipping
-        bar_segment = bar_segment - 6
-        cymbal_pattern += bar_segment
-
-    cymbal_pattern.export(filename, format="wav")
-    return cymbal_pattern
-
+def sine_wave_synthesizer(freq, duration, amplitude):
+    sample_rate = 44100
+    t = np.linspace(0, duration, int(duration * sample_rate), False)
+    sine_wave = (amplitude * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+    return sine_wave
 
