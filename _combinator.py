@@ -8,7 +8,7 @@ from moviepy.editor import concatenate_videoclips
 from pydub import AudioSegment  # Ensure this import is here
 import librosa
 import soundfile as sf
-from audio import apply_high_pass_filter, generate_soothing_sound_bath, generate_drum_pattern, generate_bass_pattern, generate_chord, solfeggio_freqs, generate_simple_chord, sine_wave_synthesizer
+from audio import apply_high_pass_filter, generate_soothing_sound_bath, generate_drum_pattern, generate_bass_pattern, generate_chord, solfeggio_freqs, generate_simple_chord, sine_wave_synthesizer, generate_drum_pattern_high_res
 from visual import generate_visuals, generate_image, generate_random_text, get_random_hashtags, generate_title, save_instagram_caption
 
 
@@ -36,42 +36,33 @@ def generate_audio(duration, num_segments=1):
     filtered_audio = apply_high_pass_filter(full_audio)
 
     drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=16)
+    drum_loop_high_res = generate_drum_pattern_high_res(tempo=190, filename="drum_pattern_high_res.wav", bars=16)
 
     # Generate the bass pattern
-    bass_pattern = generate_bass_pattern(tempo=190, duration=duration, bars=16)
-
-    steps_per_beat = 4
-    beat_duration = (60000 / 190) / steps_per_beat  # Define beat_duration here
-
-    # Synthesize the bass line
-    bass_line = AudioSegment.silent(duration=0)
-    for note in bass_pattern:
-        if note:
-            freq, note_duration = note
-            sine_wave_data = sine_wave_synthesizer(freq, note_duration / 1000, 0.5)
-            sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
-            bass_note = AudioSegment(
-                sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
-            )
-            bass_line += bass_note
-        else:
-            bass_line += AudioSegment.silent(duration=int(beat_duration))
+    bass_line = generate_bass_pattern(tempo=190, duration=duration, bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
 
-    # Repeat the drum loop until it reaches the desired duration
+    # Repeat the drum loops until they reach the desired duration
     while len(drum_loop) < duration * 1000:
         drum_loop += drum_loop
 
-    # Trim the drum loop if necessary
+    while len(drum_loop_high_res) < duration * 1000:
+        drum_loop_high_res += drum_loop_high_res
+
+    # Trim the drum loops if necessary
     drum_loop = drum_loop[:duration * 1000]
+    drum_loop_high_res = drum_loop_high_res[:duration * 1000]
 
     # Mix the filtered audio with the drum loop
     mixed_audio = drum_loop.overlay(filtered_audio)
 
     # Mix the bass line with the existing audio
     mixed_audio = mixed_audio.overlay(bass_line)
+
+    # Overlay the high-resolution drum loop on top of the mixed audio
+    mixed_audio = mixed_audio.overlay(drum_loop_high_res)
 
     # Concatenate the hook audio with the mixed audio
     mixed_audio = hook_audio + mixed_audio
@@ -80,12 +71,6 @@ def generate_audio(duration, num_segments=1):
     mixed_audio.export("audio_.wav", format="wav")
 
 
-
-
-
-
-
-    
 def generate_video(duration, img_size, fps, text_duration, num_generations=30, crossfade_duration=0):
     audio_path = "audio_.wav"
     video_path = "output_.mp4"

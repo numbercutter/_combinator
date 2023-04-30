@@ -252,7 +252,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     # Set the frequencies, amplitudes, and fade times for the deep ambient sound
     freqs = [f * random.uniform(0.9, 1.1) for f in selected_chord]  # Randomize frequency slightly
-    amps = [0.2, 0.5, 0.4]  # Adjusted amplitudes
+    amps = [0.1, 0.3, 0.2]  # Adjusted amplitudes
     fade_time = int(0.25 * sample_rate)  # 0.25 seconds
 
     # Generate sine waves with the given frequencies and amplitudes
@@ -282,8 +282,9 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     # Generate binaural beat with the selected frequency
     binaural_freq = binaural_freqs[brainwave_state]
-    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.3)
-    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.3)
+    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.05)
+    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.05)
+
 
     # Combine lush sound with binaural beat
     lush_sound_left = lush_sound + left_ear
@@ -357,26 +358,68 @@ def generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=8):
     drum_pattern.export(filename, format="wav")
     return drum_pattern
 
+def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=8):
+    kick = AudioSegment.from_file("samples/kick.wav")
+    snare = AudioSegment.from_file("samples/snare.wav")
+    hihat = AudioSegment.from_file("samples/hihat.wav")
+    drum_pattern = AudioSegment.silent(duration=0)
+
+    def generate_random_pattern(length=64, probability=0.1):
+        return ["x" if random.random() < probability else "-" for _ in range(length)]
+
+    patterns = {
+        "kick": generate_random_pattern(64, 0.02),
+        "snare": generate_random_pattern(64, 0.02),
+        "hihat": generate_random_pattern(64, 0.04)
+    }
+
+    steps_per_beat = 16
+    beat_duration = (60000 / tempo) / steps_per_beat
+
+    priority_order = ['kick', 'snare', 'hihat']
+    samples = {'kick': kick, 'snare': snare, 'hihat': hihat}
+
+    for bar in range(bars):
+        bar_segment = AudioSegment.silent(duration=0)
+        for i in range(64):
+            beat_segment = AudioSegment.silent(duration=int(beat_duration))
+
+            for priority_sample in priority_order:
+                if patterns[priority_sample][i] == "x":
+                    sample = samples[priority_sample]
+                    beat_segment = beat_segment.overlay(sample - 6)
+
+            bar_segment += beat_segment
+
+        drum_pattern += bar_segment
+
+    drum_pattern.export(filename, format="wav")
+    return drum_pattern
+
 def generate_bass_pattern(tempo, duration, bars):
     bass_notes = [20, 40, 60, 80, 100, 150, 200, 250, 300]  # A list of bass frequencies
     steps_per_beat = 4
     beat_duration = (60000 / tempo) / steps_per_beat
 
-    bass_pattern = []
+    bass_line = AudioSegment.silent(duration=0)
 
     for bar in range(bars):
         for step in range(steps_per_beat * 4):  # Assuming 4 beats per bar
             if random.random() < 0.3:  # Adjust probability of a note being played
                 bass_note = random.choice(bass_notes)
-                bass_pattern.append((bass_note, int(beat_duration)))
+                sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / 1000, 0.5)
+                sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
+                bass_audio_segment = AudioSegment(
+                    sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
+                )
+                bass_line += bass_audio_segment
             else:
-                bass_pattern.append(None)
+                bass_line += AudioSegment.silent(duration=int(beat_duration))
 
-    return bass_pattern
+    return bass_line
 
 def sine_wave_synthesizer(freq, duration, amplitude):
     sample_rate = 44100
     t = np.linspace(0, duration, int(duration * sample_rate), False)
     sine_wave = (amplitude * np.sin(2 * np.pi * freq * t)).astype(np.float32)
     return sine_wave
-
