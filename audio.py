@@ -423,3 +423,4 @@ def sine_wave_synthesizer(freq, duration, amplitude):
     t = np.linspace(0, duration, int(duration * sample_rate), False)
     sine_wave = (amplitude * np.sin(2 * np.pi * freq * t)).astype(np.float32)
     return sine_wave
+

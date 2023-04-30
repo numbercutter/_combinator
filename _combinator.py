@@ -36,10 +36,10 @@ def generate_audio(duration, num_segments=1):
     filtered_audio = apply_high_pass_filter(full_audio)
 
     drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=16)
-    drum_loop_high_res = generate_drum_pattern_high_res(tempo=190, filename="drum_pattern_high_res.wav", bars=16)
+    drum_loop_high_res = generate_drum_pattern_high_res(tempo=95, filename="drum_pattern_high_res.wav", bars=16)
 
     # Generate the bass pattern
-    bass_line = generate_bass_pattern(tempo=190, duration=duration, bars=16)
+    bass_line = generate_bass_pattern(tempo=95, duration=duration, bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)

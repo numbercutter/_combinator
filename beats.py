@@ -8,13 +8,14 @@ from audio import generate_bass_pattern, sine_wave_synthesizer, generate_drum_pa
 
 def generate_audio(duration):
     # Generate the drum loop
-    drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=16)
+    temp = 100
+    drum_loop = generate_drum_pattern(tempo=temp, filename="drum_pattern.wav", bars=16)
 
     # Generate the high-resolution drum loop
-    drum_loop_high_res = generate_drum_pattern_high_res(tempo=190, filename="drum_pattern_high_res.wav", bars=16)
+    drum_loop_high_res = generate_drum_pattern_high_res(tempo=temp, filename="drum_pattern_high_res.wav", bars=16)
 
     # Generate the bass line
-    bass_line = generate_bass_pattern(tempo=190, duration=duration, bars=16)
+    bass_line = generate_bass_pattern(tempo=temp, duration=duration, bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
