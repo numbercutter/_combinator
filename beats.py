@@ -9,13 +9,13 @@ from audio import generate_bass_pattern, sine_wave_synthesizer, generate_drum_pa
 def generate_audio(duration):
     # Generate the drum loop
     temp = 100
-    drum_loop = generate_drum_pattern(tempo=temp, filename="drum_pattern.wav", bars=16)
+    drum_loop = generate_drum_pattern(tempo=temp, filename="drum_pattern.wav", bars=4)
 
     # Generate the high-resolution drum loop
     drum_loop_high_res = generate_drum_pattern_high_res(tempo=temp, filename="drum_pattern_high_res.wav", bars=16)
 
     # Generate the bass line
-    bass_line = generate_bass_pattern(tempo=temp, duration=duration, bars=16)
+    bass_line = generate_bass_pattern(tempo=temp, duration=duration, bars=4)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
@@ -37,6 +37,7 @@ def generate_audio(duration):
 
     # Export the mixed audio to a WAV file
     mixed_audio.export("audio_.wav", format="wav")
+    
 if __name__ == "__main__":
     duration = 20
 

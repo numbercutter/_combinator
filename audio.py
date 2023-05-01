@@ -397,6 +397,7 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
     return drum_pattern
 
 def generate_bass_pattern(tempo, duration, bars):
+    tempo = 190
     bass_notes = [20, 40, 60, 80, 100, 150, 200, 250, 300]  # A list of bass frequencies
     steps_per_beat = 4
     beat_duration = (60000 / tempo) / steps_per_beat
