@@ -12,34 +12,26 @@ from audio import apply_high_pass_filter, generate_soothing_sound_bath, generate
 from visual import generate_visuals, generate_image, generate_random_text, get_random_hashtags, generate_title, save_instagram_caption
 
 
+# Define the different chord progressions to use
+chord_progressions = [
+    [[110, 165, 220], [130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # A minor - C major - D major - E major - G major
+    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # C major - D major - E major - G major
+]
+    
+def generate_full_audio(duration, num_segments=1):
 
+    # Choose a random chord progression
+    chord_progression = random.choice(chord_progressions)
 
-def generate_audio(duration, num_segments=1):
-    segment_duration = duration / num_segments
+    # Generate the drum loop
+    tempo = 100
+    drum_loop = generate_drum_pattern(tempo=tempo, filename="drum_pattern.wav", bars=4)
 
-    # Generate the audio segments
-    audio_segments = []
-    for _ in range(num_segments):
-        chord = generate_simple_chord(duration=segment_duration)
-        audio_segments.append(chord)
+    # Generate the high-resolution drum loop
+    drum_loop_high_res = generate_drum_pattern_high_res(tempo=tempo, filename="drum_pattern_high_res.wav", bars=16)
 
-    # Concatenate audio segments
-    full_audio = audio_segments[0]
-    for segment in audio_segments[1:]:
-        full_audio = full_audio.append(segment)
-
-    # Create a soothing sound bath for the hook
-    hook_audio_file = generate_soothing_sound_bath(3)
-    hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
-
-    full_audio = AudioSegment.from_wav(full_audio)
-    filtered_audio = apply_high_pass_filter(full_audio)
-
-    drum_loop = generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=16)
-    drum_loop_high_res = generate_drum_pattern_high_res(tempo=95, filename="drum_pattern_high_res.wav", bars=16)
-
-    # Generate the bass pattern
-    bass_line = generate_bass_pattern(tempo=95, duration=duration, bars=16)
+    # Generate the bass line using the chord progression
+    bass_line = generate_bass_pattern(chord_progression, tempo=190, duration=duration, bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
@@ -55,14 +47,32 @@ def generate_audio(duration, num_segments=1):
     drum_loop = drum_loop[:duration * 1000]
     drum_loop_high_res = drum_loop_high_res[:duration * 1000]
 
-    # Mix the filtered audio with the drum loop
-    mixed_audio = drum_loop.overlay(filtered_audio)
-
-    # Mix the bass line with the existing audio
-    mixed_audio = mixed_audio.overlay(bass_line)
-
-    # Overlay the high-resolution drum loop on top of the mixed audio
+    # Mix the bass line with the drum loops
+    mixed_audio = drum_loop.overlay(bass_line)
     mixed_audio = mixed_audio.overlay(drum_loop_high_res)
+
+    segment_duration = duration / num_segments
+
+    # Generate the audio segments using the chord progression
+    audio_segments = []
+    for _ in range(num_segments):
+        chord = generate_simple_chord(chord_progression, duration=segment_duration)
+        audio_segments.append(chord)
+
+    # Concatenate audio segments
+    full_audio = audio_segments[0]
+    for segment in audio_segments[1:]:
+        full_audio = full_audio.append(segment)
+
+    # Create a soothing sound bath for the hook
+    hook_audio_file = generate_soothing_sound_bath(3)
+    hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
+
+    full_audio = AudioSegment.from_wav(full_audio)
+    filtered_audio = apply_high_pass_filter(full_audio)
+
+    # Mix the filtered audio with the mixed_audio
+    mixed_audio = mixed_audio.overlay(filtered_audio)
 
     # Concatenate the hook audio with the mixed audio
     mixed_audio = hook_audio + mixed_audio
