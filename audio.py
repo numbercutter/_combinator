@@ -82,10 +82,9 @@ def apply_lfo_filter(audio, lfo_freq=0.5, lfo_amp=0.05):
     return audio_filtered
 
 
-def generate_simple_chord(duration, output_file='simple_chord.wav', fm_intensity=0.01, fm_speed=0.1):
-    # Select a random chord progression to use
-    selected_chord_progression = random.choice(chord_progressions)
-
+def generate_simple_chord(chord_progression, duration, output_file='simple_chord.wav', fm_intensity=0.01, fm_speed=0.1):
+    
+    selected_chord_progression = chord_progression
     sample_rate = 44100
     duration_ms = duration * 1000  # Convert duration to milliseconds
 
@@ -396,9 +395,13 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
     drum_pattern.export(filename, format="wav")
     return drum_pattern
 
-def generate_bass_pattern(tempo, duration, bars):
+def generate_bass_pattern(chord_progression, tempo, duration, bars):
     tempo = 190
-    bass_notes = [20, 40, 60, 80, 100, 150, 200, 250, 300]  # A list of bass frequencies
+    bass_notes = []
+    for chord in chord_progression:
+        for note_freq in chord:
+            bass_notes.append(note_freq / 2)  # Add bass frequencies as half of the note frequencies
+    bass_notes = list(set(bass_notes))  # Remove duplicates
     steps_per_beat = 4
     beat_duration = (60000 / tempo) / steps_per_beat
 
