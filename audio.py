@@ -425,6 +425,7 @@ def generate_bass_pattern(chord_progression, tempo, duration, bars):
 def sine_wave_synthesizer(freq, duration, amplitude):
     sample_rate = 44100
     t = np.linspace(0, duration, int(duration * sample_rate), False)
-    sine_wave = (amplitude * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+    hann_window = np.hanning(len(t))
+    sine_wave = (amplitude * np.sin(2 * np.pi * freq * t) * hann_window).astype(np.float32)
     return sine_wave
 
