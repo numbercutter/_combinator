@@ -395,21 +395,23 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
     drum_pattern.export(filename, format="wav")
     return drum_pattern
 
-def generate_bass_pattern(chord_progression, tempo, duration, bars):
-    tempo = 190
-    bass_notes = []
-    for chord in chord_progression:
-        for note_freq in chord:
-            bass_notes.append(note_freq / 2)  # Add bass frequencies as half of the note frequencies
-    bass_notes = list(set(bass_notes))  # Remove duplicates
+def generate_bass_pattern(chord, tempo, duration, bars):
+    bass_notes = [note_freq / 2 for note_freq in chord]  # Add bass frequencies as half of the note frequencies
+
     steps_per_beat = 4
     beat_duration = (60000 / tempo) / steps_per_beat
 
     bass_line = AudioSegment.silent(duration=0)
 
+    hold_note = False
+    hold_duration = 0
     for bar in range(bars):
         for step in range(steps_per_beat * 4):  # Assuming 4 beats per bar
-            if random.random() < 0.3:  # Adjust probability of a note being played
+            if hold_note:
+                hold_duration -= 1
+                if hold_duration == 0:
+                    hold_note = False
+            elif random.random() < 0.3:  # Adjust probability of a note being played
                 bass_note = random.choice(bass_notes)
                 sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / 1000, 0.5)
                 sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
@@ -417,10 +419,28 @@ def generate_bass_pattern(chord_progression, tempo, duration, bars):
                     sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
                 )
                 bass_line += bass_audio_segment
+
+                # Determine if the note should be held or followed by a short groove
+                note_length_type = random.choices(['hold', 'short_groove'], weights=[0.5, 0.5])[0]
+
+                if note_length_type == 'hold':
+                    hold_duration = random.randint(1, 3)  # Randomly hold a note for 1 to 3 steps
+                    hold_note = True
+                elif note_length_type == 'short_groove':
+                    bass_line += AudioSegment.silent(duration=int(beat_duration / 2))
+                    sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / (2 * 1000), 0.5)
+                    sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
+                    bass_audio_segment = AudioSegment(
+                        sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
+                    )
+                    bass_line += bass_audio_segment
+                    bass_line += AudioSegment.silent(duration=int(beat_duration / 2))
             else:
                 bass_line += AudioSegment.silent(duration=int(beat_duration))
 
     return bass_line
+
+
 
 def sine_wave_synthesizer(freq, duration, amplitude):
     sample_rate = 44100

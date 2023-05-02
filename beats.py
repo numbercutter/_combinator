@@ -11,7 +11,7 @@ chord_progressions = [
     [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # C major - D major - E major - G major
 ]
     
-def generate_full_audio(duration, num_segments=1):
+def generate_full_audio(duration, num_segments=2):
 
     # Choose a random chord progression
     chord_progression = random.choice(chord_progressions)
@@ -22,9 +22,6 @@ def generate_full_audio(duration, num_segments=1):
 
     # Generate the high-resolution drum loop
     drum_loop_high_res = generate_drum_pattern_high_res(tempo=tempo, filename="drum_pattern_high_res.wav", bars=16)
-
-    # Generate the bass line using the chord progression
-    bass_line = generate_bass_pattern(chord_progression, tempo=190, duration=duration, bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
@@ -40,16 +37,29 @@ def generate_full_audio(duration, num_segments=1):
     drum_loop = drum_loop[:duration * 1000]
     drum_loop_high_res = drum_loop_high_res[:duration * 1000]
 
-    # Mix the bass line with the drum loops
-    mixed_audio = drum_loop.overlay(bass_line)
-    mixed_audio = mixed_audio.overlay(drum_loop_high_res)
-
     segment_duration = duration / num_segments
+
+    # Generate the bass line segments using the chord progression
+    bass_segments = []
+    for chord in chord_progression:
+        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=4)
+        bass_segments.append(bass_line)
+
+    # Concatenate bass line segments
+    full_bass_line = bass_segments[0]
+    for segment in bass_segments[1:]:
+        full_bass_line = full_bass_line.append(segment)
+
+
+    # Mix the full bass line with the drum loops
+    mixed_audio = drum_loop.overlay(full_bass_line)
+    mixed_audio = mixed_audio.overlay(drum_loop_high_res)
 
     # Generate the audio segments using the chord progression
     audio_segments = []
     for _ in range(num_segments):
-        chord = generate_simple_chord(chord_progression, duration=segment_duration)
+        chord_file = generate_simple_chord(chord_progression, duration=segment_duration)
+        chord = AudioSegment.from_wav(chord_file)
         audio_segments.append(chord)
 
     # Concatenate audio segments
@@ -61,7 +71,6 @@ def generate_full_audio(duration, num_segments=1):
     hook_audio_file = generate_soothing_sound_bath(3)
     hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
 
-    full_audio = AudioSegment.from_wav(full_audio)
     filtered_audio = apply_high_pass_filter(full_audio)
 
     # Mix the filtered audio with the mixed_audio
@@ -73,9 +82,6 @@ def generate_full_audio(duration, num_segments=1):
     # Export the mixed audio to a WAV file
     mixed_audio.export("audio_.wav", format="wav")
 
-
 if __name__ == "__main__":
     duration = 20
-
-
     generate_full_audio(duration)
