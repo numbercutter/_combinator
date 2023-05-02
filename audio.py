@@ -10,6 +10,7 @@ from pydub.generators import Sine
 from scipy.signal import butter, lfilter
 from scipy import signal
 
+
 solfeggio_freqs = {
     "UT": 396 / 4,
     "RE": 417 / 4,
@@ -19,11 +20,7 @@ solfeggio_freqs = {
     "LA": 852 / 4,
 }
 
-# Define the different chord progressions to use
-chord_progressions = [
-    [[110, 165, 220], [130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # A minor - C major - D major - E major - G major
-    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # C major - D major - E major - G major
-]
+
 
 def butter_lowpass(cutoff, fs, order=5):
     nyq = 0.5 * fs
@@ -31,10 +28,12 @@ def butter_lowpass(cutoff, fs, order=5):
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return b, a
 
-def butter_lowpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_lowpass(cutoff, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
+def low_pass_filter(data, cutoff_freq, sample_rate, order=4):
+    nyquist = 0.5 * sample_rate
+    normal_cutoff = cutoff_freq / nyquist
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    filtered_data = lfilter(b, a, data)
+    return filtered_data
 
 def compress_audio(audio, threshold=-20, ratio=4, attack=5, release=50):
     # Convert AudioSegment to NumPy array
@@ -82,6 +81,7 @@ def apply_lfo_filter(audio, lfo_freq=0.5, lfo_amp=0.05):
     return audio_filtered
 
 
+
 def generate_simple_chord(chord_progression, duration, output_file='simple_chord.wav', fm_intensity=0.01, fm_speed=0.1):
     
     selected_chord_progression = chord_progression
@@ -115,6 +115,9 @@ def generate_simple_chord(chord_progression, duration, output_file='simple_chord
             harmonics = 0.5 * harmonics + 0.5 * modulated_sine_wave
 
             harmonics_set.append(harmonics)
+            
+            # Print note frequency
+            print(f"Note frequency: {note_freq} Hz")
 
         # Combine harmonics to create a chord
         chord_data = np.zeros_like(harmonics_set[0])
@@ -130,10 +133,13 @@ def generate_simple_chord(chord_progression, duration, output_file='simple_chord
 
     # Normalize the combined chord_data
     chord_data = chord_data / np.max(np.abs(chord_data))
+    
+    
 
     # Apply a volume scaling factor (optional)
     volume_scale = 0.5  # Reduce volume by 50%
     chord_data = chord_data * volume_scale
+    
 
     # Convert to int16 format
     chord_data_int16 = (chord_data * (2**15 - 1)).astype(np.int16)
@@ -146,6 +152,7 @@ def generate_simple_chord(chord_progression, duration, output_file='simple_chord
     # Apply a smoother fade-in and fade-out effect
     fade_duration = int(duration_ms * 0.1)  # Fade duration is 10% of the total duration
     chord_audio_faded = modulated_chord_audio.fade_in(fade_duration).fade_out(fade_duration)
+
 
     # Save the audio to a file
     chord_audio_faded.export(output_file, format="wav")
@@ -424,7 +431,7 @@ def generate_bass_pattern(chord, tempo, duration, bars):
                 note_length_type = random.choices(['hold', 'short_groove'], weights=[0.5, 0.5])[0]
 
                 if note_length_type == 'hold':
-                    hold_duration = random.randint(1, 3)  # Randomly hold a note for 1 to 3 steps
+                    hold_duration = random.randint(1, 16)  # Randomly hold a note for 1 to 3 steps
                     hold_note = True
                 elif note_length_type == 'short_groove':
                     bass_line += AudioSegment.silent(duration=int(beat_duration / 2))

@@ -5,17 +5,32 @@ from PIL import Image
 from pydub import AudioSegment  # Ensure this import is here
 from audio import generate_bass_pattern, sine_wave_synthesizer, generate_drum_pattern, generate_drum_pattern_high_res, generate_soothing_sound_bath, generate_simple_chord, apply_high_pass_filter
 
-# Define the different chord progressions to use
-chord_progressions = [
-    [[110, 165, 220], [130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # A minor - C major - D major - E major - G major
-    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # C major - D major - E major - G major
+chords = [
+    # A minor - C major - D major - E major - G major (already provided)
+    [[110, 165, 220], [130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],
+
+    # C major - D major - E major - G major (already provided)
+    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],
+
+    # C major - A minor - F major - G major
+    [[130, 195, 260], [110, 165, 220], [174, 261, 348], [196, 294, 392]],
+
+    # D minor - Bb major - A minor - G major
+    [[146, 220, 293], [116, 174, 232], [110, 165, 220], [196, 294, 392]],
+
+    # E minor - G major - A minor - B minor
+    [[164, 246, 329], [196, 294, 392], [110, 165, 220], [123, 185, 246]],
+
+    # F major - G major - E minor - C major
+    [[174, 261, 348], [196, 294, 392], [164, 246, 329], [130, 195, 260]]
 ]
+
     
 def generate_full_audio(duration, num_segments=2):
 
     # Choose a random chord progression
-    chord_progression = random.choice(chord_progressions)
-
+    chord_progression = random.choice(chords)
+    print(chord_progression)
     # Generate the drum loop
     tempo = 100
     drum_loop = generate_drum_pattern(tempo=tempo, filename="drum_pattern.wav", bars=4)
@@ -42,7 +57,7 @@ def generate_full_audio(duration, num_segments=2):
     # Generate the bass line segments using the chord progression
     bass_segments = []
     for chord in chord_progression:
-        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=4)
+        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=16)
         bass_segments.append(bass_line)
 
     # Concatenate bass line segments
