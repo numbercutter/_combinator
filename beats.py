@@ -54,16 +54,13 @@ chords = [
 
     
 def generate_full_audio(duration, num_segments=2):
-    # Choose a random chord progression
     chord_progression = random.choice(chords)
     print(chord_progression)
 
-    # Generate the drum loop
     tempo = 100
     drum_loop = generate_drum_pattern(tempo=tempo, filename="drum_pattern.wav", bars=4)
     drum_loop_high_res = generate_drum_pattern_high_res(tempo=tempo, filename="drum_pattern_high_res.wav", bars=16)
 
-    max_loop_length = len(drum_loop)
     while len(drum_loop) < duration * 1000:
         drum_loop += drum_loop
 
@@ -75,16 +72,14 @@ def generate_full_audio(duration, num_segments=2):
 
     segment_duration = duration / num_segments
 
-    # Generate the bass line motif using the first chord
-    bass_motif = generate_bass_pattern(chord_progression[0], tempo=190, duration=segment_duration, bars=4)
+    bass_motifs = [generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=4) for chord in chord_progression]
 
-    # Repeat the bass motif for each chord in the progression
-    bass_segments = [bass_motif for _ in chord_progression]
+    full_bass_line = AudioSegment.silent(duration=0)
+    while len(full_bass_line) < duration * 1000:
+        for motif in bass_motifs:
+            full_bass_line += motif
 
-    # Concatenate bass line segments
-    full_bass_line = bass_segments[0]
-    for segment in bass_segments[1:]:
-        full_bass_line = full_bass_line.append(segment)
+    full_bass_line = full_bass_line[:duration * 1000]
 
     mixed_audio = drum_loop.overlay(full_bass_line)
     mixed_audio = mixed_audio.overlay(drum_loop_high_res)
@@ -106,6 +101,7 @@ def generate_full_audio(duration, num_segments=2):
     mixed_audio = mixed_audio.overlay(filtered_audio)
     mixed_audio = hook_audio + mixed_audio
     mixed_audio.export("audio_.wav", format="wav")
+
 
 if __name__ == "__main__":
     duration = 20
