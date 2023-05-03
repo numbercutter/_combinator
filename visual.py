@@ -150,13 +150,17 @@ def generate_visuals(duration, img_size, num_frames):
 
 
 def generate_random_text():
+    inspirational_words = [
+        "believe", "dream", "inspire", "achieve", "grow", "create", "motivate", "hope", "strength", "persevere",
+        "courage", "love", "kindness", "compassion", "success", "empower", "change", "improve", "dedication",
+        "commitment", "confidence", "determination", "positivity", "resilience", "fearless", "unstoppable",
+        "progress", "happiness", "gratitude", "mindfulness", "balance", "wisdom", "patience", "adapt", "learn",
+        "overcome", "support", "encourage", "collaborate", "transform", "innovate", "endurance", "unity"
+    ]
+
     random_text = " ".join(
-        "".join(
-            random.choices(
-                string.ascii_letters + string.digits, k=random.randint(1, 10)
-            )
-        )
-        for _ in range(random.randint(1, 4))  # Change 6 to 4 to reserve 2 slots for "harmony" and "simapsee"
+        random.choice(inspirational_words)
+        for _ in range(random.randint(1, 4))  # Pick 1 to 4 words to reserve slots for "harmony" and "simapsee"
     )
 
     # Add "harmony" and "simapsee" to the random text
