@@ -22,7 +22,34 @@ chords = [
     [[164, 246, 329], [196, 294, 392], [110, 165, 220], [123, 185, 246]],
 
     # F major - G major - E minor - C major
-    [[174, 261, 348], [196, 294, 392], [164, 246, 329], [130, 195, 260]]
+    [[174, 261, 348], [196, 294, 392], [164, 246, 329], [130, 195, 260]],
+    
+    # C major - D major - E major - G major (already provided)
+    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],
+
+    # C major - A minor - F major - G major
+    [[130, 195, 260], [110, 165, 220], [174, 261, 348], [196, 294, 392]],
+
+    # D minor - Bb major - A minor - G major
+    [[146, 220, 293], [116, 174, 232], [110, 165, 220], [196, 294, 392]],
+
+    # E minor - G major - A minor - B minor
+    [[164, 246, 329], [196, 294, 392], [110, 165, 220], [123, 185, 246]],
+
+    # F major - G major - E minor - C major
+    [[174, 261, 348], [196, 294, 392], [164, 246, 329], [130, 195, 260]],
+
+    # G major - D major - A minor - C major
+    [[196, 294, 392], [146, 220, 293], [110, 165, 220], [130, 195, 260]],
+
+    # A minor - E minor - F major - G major
+    [[110, 165, 220], [164, 246, 329], [174, 261, 348], [196, 294, 392]],
+
+    # C major - G major - A minor - F major
+    [[130, 195, 260], [196, 294, 392], [110, 165, 220], [174, 261, 348]],
+
+    # D major - B minor - G major - A major
+    [[146, 220, 293], [123, 185, 246], [196, 294, 392], [220, 330, 440]]
 ]
 
     
@@ -57,7 +84,7 @@ def generate_full_audio(duration, num_segments=2):
     # Generate the bass line segments using the chord progression
     bass_segments = []
     for chord in chord_progression:
-        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=16)
+        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=8)
         bass_segments.append(bass_line)
 
     # Concatenate bass line segments

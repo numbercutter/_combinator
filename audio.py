@@ -241,6 +241,15 @@ def midi_to_freq(midi_note):
     return 440 * 2 ** ((midi_note - 69) / 12)
 
 
+def apply_fade_bath(audio, fade_in_time, fade_out_time):
+    fade_in = np.linspace(0, 1, fade_in_time)
+    fade_out = np.linspace(1, 0, fade_out_time)
+
+    audio[:fade_in_time] *= fade_in
+    audio[-fade_out_time:] *= fade_out
+
+    return audio
+
 def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav'):
     sample_rate = 44100
 
@@ -258,7 +267,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     # Set the frequencies, amplitudes, and fade times for the deep ambient sound
     freqs = [f * random.uniform(0.9, 1.1) for f in selected_chord]  # Randomize frequency slightly
-    amps = [0.1, 0.3, 0.2]  # Adjusted amplitudes
+    amps = [0.05, 0.15, 0.1]  # Reduced amplitudes
     fade_time = int(0.25 * sample_rate)  # 0.25 seconds
 
     # Generate sine waves with the given frequencies and amplitudes
@@ -273,7 +282,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
         lush_sound += sine_wave
 
     # Apply fade in and fade out to create smooth transitions
-    lush_sound = apply_fade(lush_sound, fade_time, fade_time)
+    lush_sound = apply_fade_bath(lush_sound, fade_time, fade_time)
 
     # Map brainwave states to corresponding binaural frequencies
     binaural_freqs = {
@@ -288,9 +297,8 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     # Generate binaural beat with the selected frequency
     binaural_freq = binaural_freqs[brainwave_state]
-    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.05)
-    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.05)
-
+    left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.025)
+    right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.025)
 
     # Combine lush sound with binaural beat
     lush_sound_left = lush_sound + left_ear
@@ -299,6 +307,14 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     # Create stereo audio
     stereo_audio = np.vstack((lush_sound_left, lush_sound_right)).T
 
+    # Apply a limiter to prevent clipping
+    def limiter(audio, threshold=0.9):
+        audio_clipped = np.where(audio > threshold, threshold, audio)
+        audio_clipped = np.where(audio_clipped < -threshold, -threshold, audio_clipped)
+        return audio_clipped
+
+    stereo_audio = limiter(stereo_audio)
+
     # Normalize the audio
     stereo_audio = librosa.util.normalize(stereo_audio, norm=np.inf, axis=None)
 
@@ -306,6 +322,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     sf.write(output_file, stereo_audio, sample_rate, format='wav', subtype='PCM_24')
 
     return output_file
+
 
 def generate_random_pattern(samples, length, probability=0.1):
     pattern = ["-"] * length
@@ -412,14 +429,16 @@ def generate_bass_pattern(chord, tempo, duration, bars):
 
     hold_note = False
     hold_duration = 0
+    pattern = [0, 2, 0, 1, 0, 2, 0, 1]  # A structured pattern
     for bar in range(bars):
         for step in range(steps_per_beat * 4):  # Assuming 4 beats per bar
+            bass_note = bass_notes[pattern[step % len(pattern)]]  # Cycle through the pattern
+            
             if hold_note:
                 hold_duration -= 1
                 if hold_duration == 0:
                     hold_note = False
-            elif random.random() < 0.3:  # Adjust probability of a note being played
-                bass_note = random.choice(bass_notes)
+            elif random.random() < 0.6:  # Adjust probability of a note being played
                 sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / 1000, 0.5)
                 sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
                 bass_audio_segment = AudioSegment(
@@ -428,24 +447,18 @@ def generate_bass_pattern(chord, tempo, duration, bars):
                 bass_line += bass_audio_segment
 
                 # Determine if the note should be held or followed by a short groove
-                note_length_type = random.choices(['hold', 'short_groove'], weights=[0.5, 0.5])[0]
+                note_length_type = random.choices(['hold', 'short_groove'], weights=[0.7, 0.3])[0]
 
                 if note_length_type == 'hold':
-                    hold_duration = random.randint(1, 16)  # Randomly hold a note for 1 to 3 steps
+                    hold_duration = random.randint(1, 8)  # Randomly hold a note for 1 to 8 steps
                     hold_note = True
                 elif note_length_type == 'short_groove':
-                    bass_line += AudioSegment.silent(duration=int(beat_duration / 2))
-                    sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / (2 * 1000), 0.5)
-                    sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
-                    bass_audio_segment = AudioSegment(
-                        sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
-                    )
-                    bass_line += bass_audio_segment
-                    bass_line += AudioSegment.silent(duration=int(beat_duration / 2))
+                    bass_line += AudioSegment.silent(duration=int(beat_duration))
             else:
                 bass_line += AudioSegment.silent(duration=int(beat_duration))
 
     return bass_line
+
 
 
 

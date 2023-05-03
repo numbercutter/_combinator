@@ -12,26 +12,38 @@ from audio import apply_high_pass_filter, generate_soothing_sound_bath, generate
 from visual import generate_visuals, generate_image, generate_random_text, get_random_hashtags, generate_title, save_instagram_caption
 
 
-# Define the different chord progressions to use
-chord_progressions = [
-    [[110, 165, 220], [130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # A minor - C major - D major - E major - G major
-    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],  # C major - D major - E major - G major
+chords = [
+    # A minor - C major - D major - E major - G major (already provided)
+    [[110, 165, 220], [130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],
+
+    # C major - D major - E major - G major (already provided)
+    [[130, 195, 260], [146, 220, 293], [164, 246, 329], [196, 294, 392]],
+
+    # C major - A minor - F major - G major
+    [[130, 195, 260], [110, 165, 220], [174, 261, 348], [196, 294, 392]],
+
+    # D minor - Bb major - A minor - G major
+    [[146, 220, 293], [116, 174, 232], [110, 165, 220], [196, 294, 392]],
+
+    # E minor - G major - A minor - B minor
+    [[164, 246, 329], [196, 294, 392], [110, 165, 220], [123, 185, 246]],
+
+    # F major - G major - E minor - C major
+    [[174, 261, 348], [196, 294, 392], [164, 246, 329], [130, 195, 260]]
 ]
+
     
-def generate_full_audio(duration, num_segments=1):
+def generate_full_audio(duration, num_segments=2):
 
     # Choose a random chord progression
-    chord_progression = random.choice(chord_progressions)
-
+    chord_progression = random.choice(chords)
+    print(chord_progression)
     # Generate the drum loop
     tempo = 100
     drum_loop = generate_drum_pattern(tempo=tempo, filename="drum_pattern.wav", bars=4)
 
     # Generate the high-resolution drum loop
     drum_loop_high_res = generate_drum_pattern_high_res(tempo=tempo, filename="drum_pattern_high_res.wav", bars=16)
-
-    # Generate the bass line using the chord progression
-    bass_line = generate_bass_pattern(chord_progression, tempo=190, duration=duration, bars=16)
 
     # Determine the length of the longest loop
     max_loop_length = len(drum_loop)
@@ -47,16 +59,29 @@ def generate_full_audio(duration, num_segments=1):
     drum_loop = drum_loop[:duration * 1000]
     drum_loop_high_res = drum_loop_high_res[:duration * 1000]
 
-    # Mix the bass line with the drum loops
-    mixed_audio = drum_loop.overlay(bass_line)
-    mixed_audio = mixed_audio.overlay(drum_loop_high_res)
-
     segment_duration = duration / num_segments
+
+    # Generate the bass line segments using the chord progression
+    bass_segments = []
+    for chord in chord_progression:
+        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=16)
+        bass_segments.append(bass_line)
+
+    # Concatenate bass line segments
+    full_bass_line = bass_segments[0]
+    for segment in bass_segments[1:]:
+        full_bass_line = full_bass_line.append(segment)
+
+
+    # Mix the full bass line with the drum loops
+    mixed_audio = drum_loop.overlay(full_bass_line)
+    mixed_audio = mixed_audio.overlay(drum_loop_high_res)
 
     # Generate the audio segments using the chord progression
     audio_segments = []
     for _ in range(num_segments):
-        chord = generate_simple_chord(chord_progression, duration=segment_duration)
+        chord_file = generate_simple_chord(chord_progression, duration=segment_duration)
+        chord = AudioSegment.from_wav(chord_file)
         audio_segments.append(chord)
 
     # Concatenate audio segments
@@ -68,7 +93,6 @@ def generate_full_audio(duration, num_segments=1):
     hook_audio_file = generate_soothing_sound_bath(3)
     hook_audio = AudioSegment.from_wav(hook_audio_file)  # Read the file back as an AudioSegment
 
-    full_audio = AudioSegment.from_wav(full_audio)
     filtered_audio = apply_high_pass_filter(full_audio)
 
     # Mix the filtered audio with the mixed_audio
@@ -201,8 +225,6 @@ if __name__ == "__main__":
     ]
     random_hashtags = get_random_hashtags(hashtags)
     print("Random Hashtags:", random_hashtags)
-    
-    random_hashtags += ["#getoffinstagram", "#focusonyourgoals"] # add the two new hashtags
 
     random_title = generate_title(hashtags)
     print("Random Title:", random_title)
@@ -222,7 +244,7 @@ if __name__ == "__main__":
     num_segments = 1
 
 
-    generate_audio(duration, num_segments)
+    generate_full_audio(duration, num_segments)
 
 
     generate_video(
