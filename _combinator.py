@@ -208,21 +208,22 @@ if __name__ == "__main__":
     "#mindfularttherapy", "#mindfulhiking", "#mindfulyoga", "#meditationfestival", "#consciouscommunitybuilding",
     "#brainwaveentrainment", "#neuroplasticityexercise", "#sacredgeometryartist", "#mandalastones", "#fractalpatterns",
     "#goldenratiogarden", "#floweroflifetattoos", "#ancienttexts", "#spiritualunderstanding", "#esoterictraditions",
-    "#mysticalliving", "#soundhealingtherapy", "#binauralbeatstherapy", "#personalfinance", "#investing", "#moneytips", "#budgeting", "#wealthmanagement", 
-    "#financialfreedom", "#retirementplanning", "#stocks", "#cryptocurrency", "#entrepreneurship", 
-    "#taxes", "#creditcards", "#debtfree", "#financialplanning", "#savingmoney", "#investmentstrategies", 
-    "#moneymanagement", "#financialadvice", "#stockmarket", "#economics", "#businessgrowth", 
-    "#financialliteracy", "#financialindependence", "#investments",  "#fitfam", "#workoutmotivation", "#fitnessgoals", "#fitnessjourney", "#healthyhabits", 
-    "#gymlife", "#fitspo", "#personaltrainer", "#fitnesschallenge", "#cardio", 
-    "#weightlifting", "#yoga", "#running", "#HIIT", "#crossfit", "#fitnessinspiration", 
-    "#bodybuilding", "#fitnessmodel", "#healthydiet", "#nutrition", "#fitnesstips", 
-    "#fitnesstransformation", "#fitnessaddict", "#fitnesscommunity", "#fitnessequipment",
-    "#funnyvideos", "#jokes", "#humor", "#comedycentral", "#laughoutloud", 
-    "#standupcomedy", "#memes", "#comedyclub", "#satire", "#parody", 
-    "#roast", "#improv", "#sketchcomedy", "#funnyclips", "#pranks", 
-    "#humorous", "#comedian", "#humorist", "#funnybone", "#humorouscontent", 
-    "#comedyshow", "#funnythoughts", "#funnymoments", "#comedygold"
+    "#mysticalliving", "#soundhealingtherapy", "#binauralbeatstherapy","#sobriety", "#sobrietyrocks", "#sobrietymatters", "#soberliving", "#sobersquad",
+    "#soberaf", "#soberissexy", "#sobercommunity", "#sobermovement", "#sobrietyispossible",
+    "#sobrietyjourney", "#soberlife", "#sobrietyquotes", "#sobercurious", "#soberafnation",
+    "#goals", "#goalsetting", "#goalgetter", "#goalchaser", "#goaloriented",
+    "#achievegoals", "#mindset", "#successmindset", "#motivation", "#inspiration",
+    "#mindpower", "#determination", "#focus", "#hardworkpaysoff", "#nevergiveup",
+    "#positivethinking", "#selfimprovement", "#personaldevelopment", "#lifegoals", "#dreambig",
+    "#goalplanning", "#goaldigger", "#ambition", "#success", "#goalcrusher",
+    "#goalplanner", "#goalinspiration", "#goaldriven", "#motivationmonday", "#successquotes",
+    "#mindsetiseverything", "#mindsetquotes", "#motivationalquotes", "#inspirationalquotes", "#mindsetcoach",
+    "#mindsetmatters", "#motivationalspeaker", "#successmindsettraining", "#inspirationalthoughts", "#motivationalthoughts",
+    "#mindsetshift", "#mindsetofgreatness", "#goalsettingtips", "#achieveyourgoals", "#personalgrowth"
     ]
+
+
+
     random_hashtags = get_random_hashtags(hashtags)
     print("Random Hashtags:", random_hashtags)
 
