@@ -420,25 +420,30 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
     return drum_pattern
 
 def generate_bass_pattern(chord, tempo, duration, bars):
-    bass_notes = [note_freq / 2 for note_freq in chord]  # Add bass frequencies as half of the note frequencies
+    bass_notes = [note_freq / 2 for note_freq in chord]
 
-    steps_per_beat = 4
+    steps_per_beat = 2  # Lowered the resolution of the bass pattern
     beat_duration = (60000 / tempo) / steps_per_beat
 
     bass_line = AudioSegment.silent(duration=0)
 
     hold_note = False
     hold_duration = 0
-    pattern = [0, 2, 0, 1, 0, 2, 0, 1]  # A structured pattern
+    pattern = [0, -1, 2, -1, -1, 0, 1, -1]  # Modified the pattern to have fewer notes and more silences
     for bar in range(bars):
-        for step in range(steps_per_beat * 4):  # Assuming 4 beats per bar
-            bass_note = bass_notes[pattern[step % len(pattern)]]  # Cycle through the pattern
+        for step in range(steps_per_beat * 4):
+            bass_note_index = pattern[step % len(pattern)]
             
+            if bass_note_index != -1:
+                bass_note = bass_notes[bass_note_index]
+            else:
+                bass_note = None
+
             if hold_note:
                 hold_duration -= 1
                 if hold_duration == 0:
                     hold_note = False
-            elif random.random() < 0.6:  # Adjust probability of a note being played
+            elif bass_note is not None and random.random() < 0.5:  # Adjusted the probability of a note being played
                 sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / 1000, 0.5)
                 sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
                 bass_audio_segment = AudioSegment(
@@ -446,18 +451,21 @@ def generate_bass_pattern(chord, tempo, duration, bars):
                 )
                 bass_line += bass_audio_segment
 
-                # Determine if the note should be held or followed by a short groove
-                note_length_type = random.choices(['hold', 'short_groove'], weights=[0.7, 0.3])[0]
+                note_length_type = random.choices(['hold', 'short_groove', 'rest'], weights=[0.5, 0.3, 0.2])[0]
 
                 if note_length_type == 'hold':
-                    hold_duration = random.randint(1, 8)  # Randomly hold a note for 1 to 8 steps
+                    hold_duration = random.randint(1, 8)
                     hold_note = True
                 elif note_length_type == 'short_groove':
                     bass_line += AudioSegment.silent(duration=int(beat_duration))
+                elif note_length_type == 'rest':
+                    rest_duration = random.randint(1, 4) * int(beat_duration)
+                    bass_line += AudioSegment.silent(duration=rest_duration)
             else:
                 bass_line += AudioSegment.silent(duration=int(beat_duration))
 
     return bass_line
+
 
 
 
