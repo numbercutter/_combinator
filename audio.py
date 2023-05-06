@@ -20,7 +20,8 @@ solfeggio_freqs = {
     "LA": 852 / 4,
 }
 
-
+def get_note_duration(tempo, steps_per_beat):
+    return (60000 / tempo) / steps_per_beat
 
 def butter_lowpass(cutoff, fs, order=5):
     nyq = 0.5 * fs
@@ -166,9 +167,23 @@ def apply_high_pass_filter(audio_segment, cutoff_freq=150):
     filtered_audio = high_pass_filter(audio_segment, cutoff_freq)
     return filtered_audio
 
-def generate_sine_wave(freq, duration, sample_rate, amplitude=1.0):
+def generate_sine_wave(freq, duration, sample_rate, amplitude=1, phase=0):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-    return amplitude * np.sin(2 * np.pi * freq * t)
+    sine_wave = amplitude * np.sin(2 * np.pi * freq * t + phase)
+    return sine_wave
+
+def apply_fade_bath(audio, fade_in_samples, fade_out_samples):
+    audio[:fade_in_samples] *= np.linspace(0, 1, fade_in_samples)
+    audio[-fade_out_samples:] *= np.linspace(1, 0, fade_out_samples)
+    return audio
+
+def generate_chime_sound(freq, duration, sample_rate, num_sinusoids=10):
+    chime_wave = np.zeros(int(sample_rate * duration))
+    for _ in range(num_sinusoids):
+        amplitude = random.uniform(0.01, 0.1)
+        phase = random.uniform(0, 2 * np.pi)
+        chime_wave += generate_sine_wave(freq, duration, sample_rate, amplitude, phase)
+    return chime_wave
 
 def apply_fade(audio, fade_in_samples, fade_out_samples):
     audio[:fade_in_samples] *= np.linspace(0, 1, fade_in_samples)
@@ -267,19 +282,18 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
 
     # Set the frequencies, amplitudes, and fade times for the deep ambient sound
     freqs = [f * random.uniform(0.9, 1.1) for f in selected_chord]  # Randomize frequency slightly
-    amps = [0.05, 0.15, 0.1]  # Reduced amplitudes
     fade_time = int(0.25 * sample_rate)  # 0.25 seconds
 
-    # Generate sine waves with the given frequencies and amplitudes
-    sine_waves = []
-    for freq, amp in zip(freqs, amps):
-        sine_wave = generate_sine_wave(freq, duration, sample_rate, amplitude=amp)
-        sine_waves.append(sine_wave)
+    # Generate chime sounds with the given frequencies
+    chime_waves = []
+    for freq in freqs:
+        chime_wave = generate_chime_sound(freq, duration, sample_rate)
+        chime_waves.append(chime_wave)
 
     # Create the combined deep ambient sound
-    lush_sound = np.zeros_like(sine_waves[0])
-    for sine_wave in sine_waves:
-        lush_sound += sine_wave
+    lush_sound = np.zeros_like(chime_waves[0])
+    for chime_wave in chime_waves:
+        lush_sound += chime_wave
 
     # Apply fade in and fade out to create smooth transitions
     lush_sound = apply_fade_bath(lush_sound, fade_time, fade_time)
@@ -299,7 +313,7 @@ def generate_soothing_sound_bath(duration, output_file='deep_ambient_sound.wav')
     binaural_freq = binaural_freqs[brainwave_state]
     left_ear = generate_sine_wave(freqs[0] - binaural_freq / 2, duration, sample_rate, amplitude=0.025)
     right_ear = generate_sine_wave(freqs[0] + binaural_freq / 2, duration, sample_rate, amplitude=0.025)
-
+    
     # Combine lush sound with binaural beat
     lush_sound_left = lush_sound + left_ear
     lush_sound_right = lush_sound + right_ear
@@ -351,10 +365,8 @@ def generate_drum_pattern(tempo=190, filename="drum_pattern.wav", bars=8):
         "hihat": ["x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-", "x", "-"]
     }
 
-    tempo = 190
-
     steps_per_beat = 4
-    beat_duration = (60000 / tempo) / steps_per_beat
+    beat_duration = get_note_duration(tempo, steps_per_beat)
 
     priority_order = ['kick', 'snare', 'hihat']
     samples = {'kick': kick, 'snare': snare, 'hihat': hihat}
@@ -397,7 +409,7 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
     }
 
     steps_per_beat = 16
-    beat_duration = (60000 / tempo) / steps_per_beat
+    beat_duration = get_note_duration(tempo, steps_per_beat)
 
     priority_order = ['kick', 'snare', 'hihat']
     samples = {'kick': kick, 'snare': snare, 'hihat': hihat}
@@ -422,49 +434,31 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
 def generate_bass_pattern(chord, tempo, duration, bars):
     bass_notes = [note_freq / 2 for note_freq in chord]
 
-    steps_per_beat = 2  # Lowered the resolution of the bass pattern
-    beat_duration = (60000 / tempo) / steps_per_beat
+    steps_per_beat = 1  # Change this value to match the drum pattern
+    beat_duration_ms = 60000 / tempo
+    note_duration = int(beat_duration_ms / steps_per_beat)
 
     bass_line = AudioSegment.silent(duration=0)
 
-    hold_note = False
-    hold_duration = 0
-    pattern = [0, -1, 2, -1, -1, 0, 1, -1]  # Modified the pattern to have fewer notes and more silences
+    # Modify the bass pattern to have the same length as the drum pattern (64 steps)
+    pattern = [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1]
+
     for bar in range(bars):
         for step in range(steps_per_beat * 4):
             bass_note_index = pattern[step % len(pattern)]
-            
+
             if bass_note_index != -1:
                 bass_note = bass_notes[bass_note_index]
-            else:
-                bass_note = None
-
-            if hold_note:
-                hold_duration -= 1
-                if hold_duration == 0:
-                    hold_note = False
-            elif bass_note is not None and random.random() < 0.5:  # Adjusted the probability of a note being played
-                sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration / 1000, 0.5)
+                sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration_ms / 1000, 0.5)
                 sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
                 bass_audio_segment = AudioSegment(
                     sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
                 )
-                bass_line += bass_audio_segment
-
-                note_length_type = random.choices(['hold', 'short_groove', 'rest'], weights=[0.5, 0.3, 0.2])[0]
-
-                if note_length_type == 'hold':
-                    hold_duration = random.randint(1, 8)
-                    hold_note = True
-                elif note_length_type == 'short_groove':
-                    bass_line += AudioSegment.silent(duration=int(beat_duration))
-                elif note_length_type == 'rest':
-                    rest_duration = random.randint(1, 4) * int(beat_duration)
-                    bass_line += AudioSegment.silent(duration=rest_duration)
+                bass_line += bass_audio_segment[:note_duration]
             else:
-                bass_line += AudioSegment.silent(duration=int(beat_duration))
+                bass_line += AudioSegment.silent(duration=note_duration)
 
-    return bass_line
+    return bass_line[:duration * 1000]
 
 
 
@@ -473,8 +467,9 @@ def generate_bass_pattern(chord, tempo, duration, bars):
 def sine_wave_synthesizer(freq, duration, amplitude):
     sample_rate = 44100
     t = np.linspace(0, duration, int(duration * sample_rate), False)
-    triangular_window = np.bartlett(len(t))
-    sine_wave = (amplitude * np.sin(2 * np.pi * freq * t) * triangular_window).astype(np.float32)
+
+    # Use a Hann window for a more balanced attack and release
+    hann_window = np.hanning(len(t))
+
+    sine_wave = (amplitude * np.sin(2 * np.pi * freq * t) * hann_window).astype(np.float32)
     return sine_wave
-
-

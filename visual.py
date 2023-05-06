@@ -6,30 +6,98 @@ from PIL import Image, ImageDraw, ImageFont, ImageChops
 import re
 import string
 import cairo
+import noise
+def generate_face(img_size):
+    # Create a surface for drawing the face
+    face_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
+    face_ctx = cairo.Context(face_surface)
+
+    # Set random colors for the face
+    r, g, b = np.random.rand(3)
+    face_ctx.set_source_rgb(r, g, b)
+
+    # Draw face outline (circle)
+    x, y = np.random.randint(0, img_size, size=2)
+    radius = np.random.randint(img_size//4, img_size//2)
+    face_ctx.arc(x, y, radius, 0, 2 * np.pi)
+    face_ctx.stroke()
+
+    # Draw eyes (two smaller circles)
+    eye_radius = radius // 5
+    eye_offset = radius // 2
+    face_ctx.arc(x - eye_offset, y - eye_offset, eye_radius, 0, 2 * np.pi)
+    face_ctx.arc(x + eye_offset, y - eye_offset, eye_radius, 0, 2 * np.pi)
+    face_ctx.fill()
+
+    # Draw mouth (arc)
+    mouth_radius = radius // 2
+    face_ctx.arc(x, y + eye_offset, mouth_radius, np.pi, 2 * np.pi)
+    face_ctx.stroke()
+
+    return face_surface
 
 
-
-def generate_background(img_size):
+def generate_perlin_noise_background(img_size, alpha):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
     ctx = cairo.Context(surface)
 
     # Generate random gradient
     gradient = cairo.LinearGradient(0, 0, img_size, img_size)
-    gradient.add_color_stop_rgb(0, np.random.rand(), np.random.rand(), np.random.rand())
-    gradient.add_color_stop_rgb(1, np.random.rand(), np.random.rand(), np.random.rand())
 
-    # Draw rectangle with gradient
-    ctx.rectangle(0, 0, img_size, img_size)
-    ctx.set_source(gradient)
-    ctx.fill()
+    # Add more color stops with random colors
+    color_stops = []
+    for t in np.linspace(0, 1, 5):
+        color = (np.random.rand(), np.random.rand(), np.random.rand())
+        gradient.add_color_stop_rgb(t, *color)
+        color_stops.append(color)
+
+    # Draw Perlin noise pattern
+    noise_scale = 0.01
+    for x in range(img_size):
+        for y in range(img_size):
+            noise_val = (noise.pnoise2(x * noise_scale, y * noise_scale) + 1) / 2
+            t = noise_val * (len(color_stops) - 1)
+            idx1, idx2 = int(t), min(int(t) + 1, len(color_stops) - 1)
+            color = [color_stops[idx1][i] * (1 - (t - idx1)) + color_stops[idx2][i] * (t - idx1) for i in range(3)]
+            ctx.rectangle(x, y, 1, 1)
+            ctx.set_source_rgba(*color, alpha * noise_val)
+            ctx.fill()
 
     # Create SurfacePattern from surface
     pattern = cairo.SurfacePattern(surface)
     pattern.set_extend(cairo.EXTEND_REPEAT)
 
     return pattern
+def generate_radial_gradient_background(img_size, alpha):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_size, img_size)
+    ctx = cairo.Context(surface)
 
+    gradient = cairo.RadialGradient(img_size // 2, img_size // 2, 0, img_size // 2, img_size // 2, img_size // 2)
+    gradient.add_color_stop_rgba(0, np.random.rand(), np.random.rand(), np.random.rand(), alpha)
+    gradient.add_color_stop_rgba(1, np.random.rand(), np.random.rand(), np.random.rand(), alpha)
 
+    ctx.rectangle(0, 0, img_size, img_size)
+    ctx.set_source(gradient)
+    ctx.fill()
+
+    pattern = cairo.SurfacePattern(surface)
+    pattern.set_extend(cairo.EXTEND_REPEAT)
+
+    return pattern
+
+def generate_background(img_size):
+    alpha = np.random.rand()  # Random opacity between 0 and 1
+
+    # List of background style functions
+    background_styles = [
+        generate_perlin_noise_background,
+        generate_radial_gradient_background
+    ]
+
+    # Choose a random style function and call it with the img_size and alpha parameters
+    chosen_style = random.choice(background_styles)
+    return chosen_style(img_size, alpha)
+    
 def generate_visuals(duration, img_size, num_frames):
     frames = []
     # Generate random background
@@ -43,7 +111,7 @@ def generate_visuals(duration, img_size, num_frames):
     ctx.paint()
 
     # Define possible shape types
-    shape_types = ['rectangle', 'circle', 'line']
+    shape_types = ['rectangle', 'circle', 'line', 'face']
 
     # Define possible movement types
     movements = ['linear', 'circular', 'bezier']
@@ -63,6 +131,10 @@ def generate_visuals(duration, img_size, num_frames):
             x, y = np.random.randint(0, img_size, size=2)
             width, height = np.random.randint(img_size//4, img_size//2, size=2)
             ctx.rectangle(x, y, width, height)
+        elif shape_type == 'face':
+            face_surface = generate_face(img_size)
+            ctx.set_source_surface(face_surface, 0, 0)
+            ctx.paint()
         elif shape_type == 'circle':
             x, y = np.random.randint(0, img_size, size=2)
             radius = np.random.randint(img_size//4, img_size//2)

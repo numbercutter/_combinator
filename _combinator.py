@@ -64,7 +64,7 @@ def generate_full_audio(duration, num_segments=2):
     # Generate the bass line segments using the chord progression
     bass_segments = []
     for chord in chord_progression:
-        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=16)
+        bass_line = generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=4)
         bass_segments.append(bass_line)
 
     # Concatenate bass line segments
@@ -129,18 +129,20 @@ def generate_video(duration, img_size, fps, text_duration, num_generations=30, c
         start_frame = i * num_frames // num_generations
         end_frame = (i + 1) * num_frames // num_generations
         for j in range(crossfade_frames):
-            alpha = fade_out[j]
-            all_frames[start_frame + j] = Image.blend(
-                all_frames[start_frame + j],
-                all_frames[end_frame - crossfade_frames + j],
-                alpha,
-            )
-            alpha = fade_in[j]
-            all_frames[end_frame - crossfade_frames + j] = Image.blend(
-                all_frames[start_frame + j],
-                all_frames[end_frame - crossfade_frames + j],
-                alpha,
-            )
+            if start_frame + j < len(all_frames) and end_frame - crossfade_frames + j < len(all_frames):
+                alpha = fade_out[j]
+                all_frames[start_frame + j] = Image.blend(
+                    all_frames[start_frame + j],
+                    all_frames[end_frame - crossfade_frames + j],
+                    alpha,
+                )
+                alpha = fade_in[j]
+                all_frames[end_frame - crossfade_frames + j] = Image.blend(
+                    all_frames[start_frame + j],
+                    all_frames[end_frame - crossfade_frames + j],
+                    alpha,
+                )
+
 
    # Combine frames into video
     audio = AudioFileClip(audio_path)
