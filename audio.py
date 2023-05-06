@@ -434,14 +434,14 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
 def generate_bass_pattern(chord, tempo, duration, bars):
     bass_notes = [note_freq / 2 for note_freq in chord]
 
-    steps_per_beat = 1  # Change this value to match the drum pattern
+    steps_per_beat = 4  # Change this value to match the drum pattern
     beat_duration_ms = 60000 / tempo
     note_duration = int(beat_duration_ms / steps_per_beat)
 
     bass_line = AudioSegment.silent(duration=0)
 
-    # Modify the bass pattern to have the same length as the drum pattern (64 steps)
-    pattern = [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1]
+    pattern = [0, 1, -1, 1, 0, -1, 2, 1, 0, -1, 2, 1, 0, 1, 2, 1]
+
 
     for bar in range(bars):
         for step in range(steps_per_beat * 4):
