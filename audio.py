@@ -430,6 +430,14 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
 
     drum_pattern.export(filename, format="wav")
     return drum_pattern
+
+def generate_random_bass_pattern(length, min_note_duration, max_note_duration):
+    pattern = []
+    while len(pattern) < length:
+        note_duration = random.randint(min_note_duration, max_note_duration)
+        pattern.extend([random.choice([0, 1, 2, -1])] * note_duration)
+    return pattern[:length]
+
 def generate_bass_pattern(chord, tempo, duration, bars):
     bass_notes = [note_freq / 2 for note_freq in chord]
 
@@ -439,13 +447,14 @@ def generate_bass_pattern(chord, tempo, duration, bars):
 
     bass_line = AudioSegment.silent(duration=0)
 
-    pattern = [0, 0, 1, 1, -1, 1, 0, 0, -1, 2, 1, 1, 0, 0, -1, 2, 1, 1, 0, 0, 1, 2, 1, 1]  # Repeat note indexes to hold notes longer
+    pattern_length = steps_per_beat * 4
+    pattern = generate_random_bass_pattern(pattern_length, 1, 4)
 
     for bar in range(bars):
         bar_segment = AudioSegment.silent(duration=0)
-        for step in range(steps_per_beat * 4):
+        for step in range(pattern_length):
             beat_segment = AudioSegment.silent(duration=note_duration)
-            bass_note_index = pattern[step % len(pattern)]
+            bass_note_index = pattern[step]
 
             if bass_note_index != -1:
                 bass_note = bass_notes[bass_note_index]
@@ -455,7 +464,7 @@ def generate_bass_pattern(chord, tempo, duration, bars):
                     sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
                 )
                 beat_segment = beat_segment.overlay(bass_audio_segment)
-            
+
             bar_segment += beat_segment
 
         bass_line += bar_segment

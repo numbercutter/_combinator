@@ -83,6 +83,7 @@ def generate_full_audio(duration, num_segments=2):
 
     mixed_audio = drum_loop.overlay(full_bass_line)
     mixed_audio = mixed_audio.overlay(drum_loop_high_res)
+    
 
     audio_segments = []
     for _ in range(num_segments):

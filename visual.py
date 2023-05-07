@@ -31,7 +31,7 @@ def generate_face(img_size):
 
     # Draw mouth (arc)
     mouth_radius = radius // 2
-    face_ctx.arc(x, y + eye_offset, mouth_radius, np.pi, 2 * np.pi)
+    face_ctx.arc(x, y + eye_offset, mouth_radius, 0, np.pi)
     face_ctx.stroke()
 
     return face_surface
@@ -97,7 +97,7 @@ def generate_background(img_size):
     # Choose a random style function and call it with the img_size and alpha parameters
     chosen_style = random.choice(background_styles)
     return chosen_style(img_size, alpha)
-    
+
 def generate_visuals(duration, img_size, num_frames):
     frames = []
     # Generate random background
