@@ -430,36 +430,37 @@ def generate_drum_pattern_high_res(tempo=190, filename="drum_pattern.wav", bars=
 
     drum_pattern.export(filename, format="wav")
     return drum_pattern
-
 def generate_bass_pattern(chord, tempo, duration, bars):
     bass_notes = [note_freq / 2 for note_freq in chord]
 
-    steps_per_beat = 4  # Change this value to match the drum pattern
+    steps_per_beat = 4  # Keep this value the same as the drum pattern
     beat_duration_ms = 60000 / tempo
-    note_duration = int(beat_duration_ms / steps_per_beat)
+    note_duration = int(beat_duration_ms / steps_per_beat) * 4
 
     bass_line = AudioSegment.silent(duration=0)
 
-    pattern = [0, 1, -1, 1, 0, -1, 2, 1, 0, -1, 2, 1, 0, 1, 2, 1]
-
+    pattern = [0, 0, 1, 1, -1, 1, 0, 0, -1, 2, 1, 1, 0, 0, -1, 2, 1, 1, 0, 0, 1, 2, 1, 1]  # Repeat note indexes to hold notes longer
 
     for bar in range(bars):
+        bar_segment = AudioSegment.silent(duration=0)
         for step in range(steps_per_beat * 4):
+            beat_segment = AudioSegment.silent(duration=note_duration)
             bass_note_index = pattern[step % len(pattern)]
 
             if bass_note_index != -1:
                 bass_note = bass_notes[bass_note_index]
-                sine_wave_data = sine_wave_synthesizer(bass_note, beat_duration_ms / 1000, 0.5)
+                sine_wave_data = sine_wave_synthesizer(bass_note, note_duration / 1000, 0.5)
                 sine_wave_int16 = (sine_wave_data * (2**15 - 1)).astype(np.int16)
                 bass_audio_segment = AudioSegment(
                     sine_wave_int16.tobytes(), frame_rate=44100, sample_width=2, channels=1
                 )
-                bass_line += bass_audio_segment[:note_duration]
-            else:
-                bass_line += AudioSegment.silent(duration=note_duration)
+                beat_segment = beat_segment.overlay(bass_audio_segment)
+            
+            bar_segment += beat_segment
+
+        bass_line += bar_segment
 
     return bass_line[:duration * 1000]
-
 
 
 
