@@ -57,9 +57,9 @@ def generate_full_audio(duration, num_segments=2):
     chord_progression = random.choice(chords)
     print(chord_progression)
 
-    tempo = 100
+    tempo = 190
     drum_loop = generate_drum_pattern(tempo=tempo, filename="drum_pattern.wav", bars=4)
-    drum_loop_high_res = generate_drum_pattern_high_res(tempo=tempo, filename="drum_pattern_high_res.wav", bars=16)
+    drum_loop_high_res = generate_drum_pattern_high_res(tempo=100, filename="drum_pattern_high_res.wav", bars=16)
 
     while len(drum_loop) < duration * 1000:
         drum_loop += drum_loop
@@ -72,7 +72,7 @@ def generate_full_audio(duration, num_segments=2):
 
     segment_duration = duration / num_segments
 
-    bass_motifs = [generate_bass_pattern(chord, tempo=190, duration=segment_duration, bars=4) for chord in chord_progression]
+    bass_motifs = [generate_bass_pattern(chord, tempo=tempo, duration=segment_duration, bars=4) for chord in chord_progression]
 
     full_bass_line = AudioSegment.silent(duration=0)
     while len(full_bass_line) < duration * 1000:
@@ -83,6 +83,7 @@ def generate_full_audio(duration, num_segments=2):
 
     mixed_audio = drum_loop.overlay(full_bass_line)
     mixed_audio = mixed_audio.overlay(drum_loop_high_res)
+    
 
     audio_segments = []
     for _ in range(num_segments):
@@ -101,7 +102,6 @@ def generate_full_audio(duration, num_segments=2):
     mixed_audio = mixed_audio.overlay(filtered_audio)
     mixed_audio = hook_audio + mixed_audio
     mixed_audio.export("audio_.wav", format="wav")
-
 
 if __name__ == "__main__":
     duration = 20
