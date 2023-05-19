@@ -443,7 +443,7 @@ def generate_bass_pattern(chord, tempo, duration, bars):
 
     steps_per_beat = 4  # Keep this value the same as the drum pattern
     beat_duration_ms = 60000 / tempo
-    note_duration = int(beat_duration_ms / steps_per_beat) * 4
+    note_duration = int(beat_duration_ms / steps_per_beat) * 2
 
     bass_line = AudioSegment.silent(duration=0)
 
