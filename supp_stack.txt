@@ -1,17 +1,23 @@
-Certainly! Here's the updated chart without the frequency column:
 
-| Supplement                                            | Dosage                  | Time of Dosage             |
-|-------------------------------------------------------|-------------------------|-----------------------------|
-| 4th & Heart Original Grass-Fed Ghee                    | N/A                     | N/A                         |
-| Nutricost Selenium 200mcg                              | 1 capsule (200mcg)      | Morning or afternoon        |
-| Carlyle Vegan Omega 3 Supplement                       | N/A                     | N/A                         |
-| Nutricost Magnesium Glycinate 420mg                    | 2 capsules (420mg)      | Evening                     |
-| Centrum Silver Multivitamin for Men 50 Plus            | 1 tablet                | Morning or afternoon        |
-| BULKSUPPLEMENTS.COM Whey Protein Isolate Powder        | 1 serving (30g)          | Morning or post-workout     |
-| Nutricost Berberine HCl 600mg                          | 1 capsule (600mg)       | Morning or afternoon        |
-| Dr. Valerie Nelson Nicotinamide 500 mg                  | 1 capsule (500mg)       | Morning or afternoon        |
-| NOW Supplements, Ubiquinol CoQH-CF™                    | 1 softgel (50mg)        | Morning or afternoon        |
-| Nutricost L-Carnosine 500mg                            | 2 capsules (500mg)      | Morning or evening          |
-| Real Mushrooms Tremella Mushroom Extract                | N/A                     | N/A                         |
 
-Remember to follow the instructions on the product labels or consult with a healthcare professional for personalized advice on when and how to take each supplement.
+**Morning:**
+
+| Supplement                                            | Dosage                  |
+|-------------------------------------------------------|-------------------------|
+| Nutricost Selenium 200mcg                              | 1 capsule (200mcg)      |
+| Centrum Silver Multivitamin for Men 50 Plus            | 1 tablet                |
+| Nutricost Berberine HCl 600mg                          | 1 capsule (600mg)       |
+| Dr. Valerie Nelson Nicotinamide 500 mg                  | 1 capsule (500mg)       |
+| Nutricost L-Carnosine 500mg                            | 2 capsules (500mg)      |
+| BULKSUPPLEMENTS.COM Whey Protein Isolate Powder        | 1 serving (30g)          |
+| Caffeine                                              | 600mg                    |
+
+
+**Evening/Night:**
+
+| Supplement                                            | Dosage                  |
+|-------------------------------------------------------|-------------------------|
+| Nutricost Magnesium Glycinate 420mg                    | 2 capsules (420mg)      |
+| NOW Supplements, Ubiquinol CoQH-CF™                    | 1 softgel (50mg)        |
+| Carlyle Vegan Omega 3 Supplement                       | Follow recommended dosage|
+
